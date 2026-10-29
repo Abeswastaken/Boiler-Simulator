@@ -1073,14 +1073,14 @@ function frame(now){const real=Math.min(0.1,(now-last)/1000);last=now;
 requestAnimationFrame(frame);
 
 // Feedback goes to a Google Form. Fill in FEEDBACK to turn the button on.
-const FEEDBACK={form:"",type:"",msg:"",ctx:"",name:""};
+const FEEDBACK={form:"https://docs.google.com/forms/d/e/1FAIpQLScaqpadGdwDY_CanACDH3X_ZAQ44LzrCwDYcaxIuaxYk6A5UA/viewform",entry:"entry.249128714"};
 const DISC_VER="1";
 function openModal(id){$(id).hidden=false}
 function closeModal(id){$(id).hidden=true}
 function fbContext(){return `${cur.id==="hyd"?"Hot water":"Steam"} sim, t=${Math.round(cur.S.t)}s, faults: ${Object.keys(cur.F).filter(k=>cur.F[k]).join(", ")||"none"}, ${navigator.userAgent}`}
 async function sendFeedback(){
   const msg=$("fbMsg").value.trim();if(!msg){$("fbStatus").textContent="Please write something first.";return}
-  const body=new URLSearchParams();body.append(FEEDBACK.type,$("fbType").value);body.append(FEEDBACK.msg,msg);body.append(FEEDBACK.ctx,fbContext());if($("fbName").value.trim())body.append(FEEDBACK.name,$("fbName").value.trim());
+  const name=$("fbName").value.trim();const body=new URLSearchParams();body.append(FEEDBACK.entry,`[${$("fbType").value}] ${msg}\n\nFrom: ${name||"anonymous"}\nContext: ${fbContext()}`);
   $("fbSend").disabled=true;$("fbStatus").textContent="Sending...";
   try{await fetch(FEEDBACK.form.replace(/\/viewform.*$/,"/formResponse"),{method:"POST",mode:"no-cors",body});
     $("fbStatus").textContent="Thanks, it was sent.";$("fbMsg").value="";setTimeout(()=>closeModal("fb"),1200)}
