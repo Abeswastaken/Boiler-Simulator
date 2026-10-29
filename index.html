@@ -36,7 +36,7 @@ h1{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.04e
 .seg{display:flex;border:1px solid var(--panel-edge);border-radius:6px;overflow:hidden}
 .seg button{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:0;background:var(--panel);color:var(--muted);padding:8px 14px;cursor:pointer;min-height:40px}
 .seg button[aria-pressed="true"]{background:var(--plate);color:var(--plate-ink)}
-.tools{display:flex;gap:6px;margin-left:auto}
+.tools{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
 .btn{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--panel-edge);background:var(--paper);color:var(--ink);border-radius:6px;padding:8px 12px;cursor:pointer;min-height:40px}
 .btn:hover{border-color:var(--brass)}
 .btn[aria-pressed="true"]{background:var(--plate);color:var(--plate-ink);border-color:var(--plate)}
@@ -127,6 +127,16 @@ details .group{gap:10px}
 @keyframes flick{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.82)}}
 .flame{transform-box:fill-box;transform-origin:50% 100%;animation:flick .18s infinite}
 @media (prefers-reduced-motion:reduce){.flame,.drawing.shake svg{animation:none}}
+.modal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45)}
+.modalCard{width:min(480px,100%);max-height:90vh;overflow:auto;background:var(--paper);border:2px solid var(--brass);border-radius:10px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.modalCard h2{font-family:var(--display);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;font-size:21px;line-height:1.1}
+.modalCard p,.modalCard li{line-height:1.45;font-size:14px}
+.modalCard ul{padding-left:18px;margin:0 0 10px}
+.modalCard label{display:block;font-size:13px;color:var(--muted);margin:8px 0 3px}
+.modalCard select,.modalCard textarea,.modalCard input{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--panel-edge);border-radius:6px;padding:8px}
+.modalCard textarea{min-height:110px;resize:vertical}
+.modalRow{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.modalCard .note{font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -144,6 +154,8 @@ details .group{gap:10px}
     <select class="btn" id="speed" aria-label="Simulation speed"><option value="1">1x</option><option value="10" selected>10x</option><option value="60">60x</option><option value="100">100x</option><option value="500">500x</option><option value="1000">1000x</option></select>
     <button class="btn" id="restart">Reset</button>
     <button class="btn" id="theme">Theme</button>
+    <button class="btn" id="about">About</button>
+    <button class="btn" id="feedback">Feedback</button>
   </div>
 </header>
 
@@ -175,6 +187,29 @@ details .group{gap:10px}
 </div>
 </div>
 
+<div class="modal" id="disc" hidden><div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="discT">
+  <h2 id="discT">Training aid only</h2>
+  <p>Boiler Trainer is a simplified simulation for learning how boiler parts work alone and together. It is not a design tool and not a substitute for training, the manufacturer's instructions or your local code.</p>
+  <ul>
+    <li>Numbers are typical values and the physics is simplified. Real equipment varies by make, model and installation.</li>
+    <li>Never test or bypass a safety control on a real boiler to copy what you see here. Follow the manufacturer's manual, ASME/CSD-1 and your jurisdiction's rules, and work under a qualified person.</li>
+    <li>The explosion scenarios are exaggerated to show why each safety control matters.</li>
+  </ul>
+  <p class="note">Spot something wrong? Use Feedback (top bar) to report it.</p>
+  <div class="modalRow"><button class="btn" id="discOk">I understand</button></div>
+</div></div>
+<div class="modal" id="fb" hidden><div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="fbT">
+  <h2 id="fbT">Feedback</h2>
+  <p>Report a bug, suggest an idea, or flag something that isn't accurate. No sign-in needed.</p>
+  <label for="fbType">Type</label>
+  <select id="fbType"><option>Bug</option><option>Suggestion</option><option>Accuracy problem</option><option>Other</option></select>
+  <label for="fbMsg">What happened or what would you like?</label>
+  <textarea id="fbMsg" maxlength="3000" placeholder="For bugs: what you did, what you expected, what you saw. For accuracy: your source if you have one."></textarea>
+  <label for="fbName">Name (optional)</label>
+  <input id="fbName" maxlength="80" autocomplete="name">
+  <p class="note" id="fbStatus"></p>
+  <div class="modalRow"><button class="btn" id="fbCancel">Cancel</button><button class="btn" id="fbSend">Send</button></div>
+</div></div>
 <div class="sheet" id="sheet" hidden role="dialog" aria-labelledby="sheetT">
   <button class="btn x" id="sheetX">Close</button>
   <h2 id="sheetT"></h2>
@@ -1036,6 +1071,30 @@ function frame(now){const real=Math.min(0.1,(now-last)/1000);last=now;
   cur.draw(running?real:0);syncStrip();if(tab==="controls")syncSwitches();
   requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
+
+// Feedback goes to a Google Form. Fill in FEEDBACK to turn the button on.
+const FEEDBACK={form:"",type:"",msg:"",ctx:"",name:""};
+const DISC_VER="1";
+function openModal(id){$(id).hidden=false}
+function closeModal(id){$(id).hidden=true}
+function fbContext(){return `${cur.id==="hyd"?"Hot water":"Steam"} sim, t=${Math.round(cur.S.t)}s, faults: ${Object.keys(cur.F).filter(k=>cur.F[k]).join(", ")||"none"}, ${navigator.userAgent}`}
+async function sendFeedback(){
+  const msg=$("fbMsg").value.trim();if(!msg){$("fbStatus").textContent="Please write something first.";return}
+  const body=new URLSearchParams();body.append(FEEDBACK.type,$("fbType").value);body.append(FEEDBACK.msg,msg);body.append(FEEDBACK.ctx,fbContext());if($("fbName").value.trim())body.append(FEEDBACK.name,$("fbName").value.trim());
+  $("fbSend").disabled=true;$("fbStatus").textContent="Sending...";
+  try{await fetch(FEEDBACK.form.replace(/\/viewform.*$/,"/formResponse"),{method:"POST",mode:"no-cors",body});
+    $("fbStatus").textContent="Thanks, it was sent.";$("fbMsg").value="";setTimeout(()=>closeModal("fb"),1200)}
+  catch(e){$("fbStatus").innerHTML=`Couldn't send from here. <a href="${FEEDBACK.form}" target="_blank" rel="noopener">Open the feedback form</a> instead.`}
+  finally{$("fbSend").disabled=false}}
+document.addEventListener("click",e=>{const id=e.target.id;
+  if(id==="discOk"){closeModal("disc");try{localStorage.setItem("bt-disc",DISC_VER)}catch(_){}}
+  else if(id==="about")openModal("disc");
+  else if(id==="feedback"){$("fbStatus").textContent="";openModal("fb");$("fbMsg").focus()}
+  else if(id==="fbCancel")closeModal("fb");
+  else if(id==="fbSend")sendFeedback();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("fb").hidden)closeModal("fb")});
+if(!FEEDBACK.form)$("feedback").hidden=true;
+{let seen=null;try{seen=localStorage.getItem("bt-disc")}catch(_){}if(seen!==DISC_VER)openModal("disc")}
 })();
 </script>
 
