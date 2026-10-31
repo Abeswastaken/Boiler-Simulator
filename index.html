@@ -138,9 +138,9 @@ details .group{gap:10px}
 .modalRow{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
 .modalCard .note{font-size:12px;color:var(--muted)}
 </style>
+
 </head>
 <body>
-
 
 <div class="wrap">
 <header>
@@ -200,7 +200,7 @@ details .group{gap:10px}
 </div></div>
 <div class="modal" id="fb" hidden><div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="fbT">
   <h2 id="fbT">Feedback</h2>
-  <p>Report a bug, suggest an idea, or flag something that isn't accurate. No sign-in needed.</p>
+  <p>Report a bug, suggest an idea, or flag something that isn't accurate. <span id="fbTo">No sign-in needed.</span></p>
   <label for="fbType">Type</label>
   <select id="fbType"><option>Bug</option><option>Suggestion</option><option>Accuracy problem</option><option>Other</option></select>
   <label for="fbMsg">What happened or what would you like?</label>
@@ -219,6 +219,305 @@ details .group{gap:10px}
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
+/* ============ REALISTIC PARTS LIBRARY (shared by every trainer) ============ */
+// Gradients, filters and patterns live in one hidden <svg> so every drawing and part card can use them.
+const RZ_DEFS=`<defs>
+<linearGradient id="zShell" x1="0" x2="1"><stop offset="0" stop-color="#1b1f22"/><stop offset=".22" stop-color="#4d555b"/><stop offset=".36" stop-color="#6b747a"/><stop offset=".6" stop-color="#363c41"/><stop offset="1" stop-color="#15181a"/></linearGradient>
+<radialGradient id="zDome" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#7a838a"/><stop offset=".5" stop-color="#3c4348"/><stop offset="1" stop-color="#181b1e"/></radialGradient>
+<linearGradient id="zCuH" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6e3519"/><stop offset=".3" stop-color="#e9a774"/><stop offset=".55" stop-color="#b8693a"/><stop offset="1" stop-color="#5a2a12"/></linearGradient>
+<linearGradient id="zCuV" x1="0" x2="1"><stop offset="0" stop-color="#6e3519"/><stop offset=".3" stop-color="#e9a774"/><stop offset=".55" stop-color="#b8693a"/><stop offset="1" stop-color="#5a2a12"/></linearGradient>
+<linearGradient id="zBrass" x1="0" x2="1"><stop offset="0" stop-color="#6a4a12"/><stop offset=".3" stop-color="#e8cd78"/><stop offset=".55" stop-color="#b8902e"/><stop offset="1" stop-color="#5e400e"/></linearGradient>
+<linearGradient id="zBrassH" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e8cd78"/><stop offset=".45" stop-color="#c9a240"/><stop offset="1" stop-color="#6a4a12"/></linearGradient>
+<linearGradient id="zSteel" x1="0" x2="1"><stop offset="0" stop-color="#8b949a"/><stop offset=".3" stop-color="#f1f4f6"/><stop offset=".6" stop-color="#b9c1c6"/><stop offset="1" stop-color="#7d868c"/></linearGradient>
+<linearGradient id="zSteelH" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e9edf0"/><stop offset=".5" stop-color="#b3bbc0"/><stop offset="1" stop-color="#6f787e"/></linearGradient>
+<linearGradient id="zAlu" x1="0" x2="1"><stop offset="0" stop-color="#8f979d"/><stop offset=".25" stop-color="#e3e8eb"/><stop offset=".45" stop-color="#f7f9fa"/><stop offset=".7" stop-color="#b6bec3"/><stop offset="1" stop-color="#7e868b"/></linearGradient>
+<radialGradient id="zAluTop" cx=".42" cy=".4" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#cfd5d9"/><stop offset="1" stop-color="#99a1a6"/></radialGradient>
+<linearGradient id="zPlastic" x1="0" x2="1"><stop offset="0" stop-color="#bdb6a6"/><stop offset=".2" stop-color="#ece7dc"/><stop offset=".5" stop-color="#f6f3ec"/><stop offset=".85" stop-color="#d6cfc0"/><stop offset="1" stop-color="#a9a291"/></linearGradient>
+<linearGradient id="zPlasticDk" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4a4f54"/><stop offset="1" stop-color="#22262a"/></linearGradient>
+<linearGradient id="zBlue" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7fa3c4"/><stop offset=".25" stop-color="#4f7699"/><stop offset=".7" stop-color="#2e4b66"/><stop offset="1" stop-color="#1a2d3f"/></linearGradient>
+<linearGradient id="zGreen" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3f7a4a"/><stop offset="1" stop-color="#1f4a2a"/></linearGradient>
+<linearGradient id="zCab" x1="0" x2="1"><stop offset="0" stop-color="#c3cacf"/><stop offset=".5" stop-color="#e2e6e9"/><stop offset="1" stop-color="#b4bcc1"/></linearGradient>
+<linearGradient id="zCabIn" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#d9dee1"/><stop offset="1" stop-color="#c2c9ce"/></linearGradient>
+<linearGradient id="zTan" x1="0" x2="1"><stop offset="0" stop-color="#b9a578"/><stop offset=".5" stop-color="#e3d3a6"/><stop offset="1" stop-color="#a8956a"/></linearGradient>
+<linearGradient id="zLcd" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#cfe0d2"/><stop offset="1" stop-color="#a9c2ad"/></linearGradient>
+<linearGradient id="zWireBk" x1="0" x2="1"><stop offset="0" stop-color="#050505"/><stop offset=".35" stop-color="#55595c"/><stop offset="1" stop-color="#0b0b0b"/></linearGradient>
+<linearGradient id="zWireRd" x1="0" x2="1"><stop offset="0" stop-color="#5a0b07"/><stop offset=".35" stop-color="#e2554a"/><stop offset="1" stop-color="#6a100a"/></linearGradient>
+<linearGradient id="zWireYl" x1="0" x2="1"><stop offset="0" stop-color="#7a5a00"/><stop offset=".35" stop-color="#ffe26a"/><stop offset="1" stop-color="#8a6800"/></linearGradient>
+<linearGradient id="zWireBl" x1="0" x2="1"><stop offset="0" stop-color="#0b2a6a"/><stop offset=".35" stop-color="#6c9ef0"/><stop offset="1" stop-color="#0e2f78"/></linearGradient>
+<radialGradient id="zScrew" cx=".38" cy=".35" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#b9c1c6"/><stop offset="1" stop-color="#5f686d"/></radialGradient>
+<radialGradient id="zInside" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#3a3f43"/><stop offset="1" stop-color="#121416"/></radialGradient>
+<linearGradient id="zWinding" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e3a05e"/><stop offset=".5" stop-color="#b8692f"/><stop offset="1" stop-color="#6e3a14"/></linearGradient>
+<linearGradient id="zLam" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9aa3a9"/><stop offset=".5" stop-color="#5c656b"/><stop offset="1" stop-color="#2e3438"/></linearGradient>
+<linearGradient id="zMotor" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5d86ad"/><stop offset=".35" stop-color="#3b6287"/><stop offset="1" stop-color="#1c3149"/></linearGradient>
+<radialGradient id="zFlame" cx=".5" cy=".85" r=".9"><stop offset="0" stop-color="#9fd0ff"/><stop offset=".35" stop-color="#3d7de0"/><stop offset=".8" stop-color="#f0a040" stop-opacity=".7"/><stop offset="1" stop-color="#f0a040" stop-opacity="0"/></radialGradient>
+<filter id="zShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".3"/></filter>
+<filter id="zSoft"><feGaussianBlur stdDeviation="3"/></filter>
+<filter id="zGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="zFins" width="3" height="10" patternUnits="userSpaceOnUse"><rect width="3" height="10" fill="#a9b2b8"/><rect width="1.1" height="10" fill="#eef2f4"/></pattern>
+<pattern id="zFinsH" width="10" height="3" patternUnits="userSpaceOnUse"><rect width="10" height="3" fill="#a9b2b8"/><rect width="10" height="1.1" fill="#eef2f4"/></pattern>
+<pattern id="zGrille" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="none"/><path d="M0 3 H6 M3 0 V6" stroke="#2a2f33" stroke-width="1"/></pattern>
+<pattern id="zLouver" width="10" height="7" patternUnits="userSpaceOnUse"><rect width="10" height="7" fill="#c3cacf"/><rect y="4" width="10" height="2" fill="#6f787e"/></pattern>
+<pattern id="zPleat" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#f4f1ea"/><path d="M0 0 L6 6" stroke="#cdc6b6" stroke-width="1.4"/></pattern>
+<pattern id="zWind" width="6" height="4" patternUnits="userSpaceOnUse"><rect width="6" height="4" fill="url(#zWinding)"/><path d="M0 2 H6" stroke="#5a2e10" stroke-width=".6" opacity=".6"/></pattern>
+<pattern id="zBrick" width="24" height="12" patternUnits="userSpaceOnUse"><rect width="24" height="12" fill="#c4b9a6"/><path d="M0 0 H24 M0 6 H24 M6 0 V6 M18 6 V12" stroke="#9c8f78" stroke-width=".8"/></pattern>
+</defs>`;
+function rzEnsureDefs(){if(document.getElementById("rzDefs"))return;const s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.id="rzDefs";s.setAttribute("aria-hidden","true");s.setAttribute("width","0");s.setAttribute("height","0");s.style.cssText="position:absolute;width:0;height:0;overflow:hidden";s.innerHTML=RZ_DEFS;document.body.prepend(s)}
+// Copper tube look: dark copper edge behind each refrigerant line and a highlight along it. The line color still shows the refrigerant state.
+function rzTubes(root){rzEnsureDefs();const NS="http://www.w3.org/2000/svg";
+  root.querySelectorAll("path.rpipe:not([data-z]),path.ins:not([data-z]),path.wpipe:not([data-z])").forEach(p=>{p.setAttribute("data-z","1");const w=+(p.getAttribute("stroke-width")||6),d=p.getAttribute("d");
+    const ins=p.classList.contains("ins");
+    const back=document.createElementNS(NS,"path");back.setAttribute("d",d);back.setAttribute("class","zTubeO");back.setAttribute("stroke-width",w+(ins?2:3));back.setAttribute("stroke",ins?"#0d0f10":"#5a2a12");
+    p.parentNode.insertBefore(back,p);
+    const hi=document.createElementNS(NS,"path");hi.setAttribute("d",d);hi.setAttribute("class","zTubeH");hi.setAttribute("stroke-width",Math.max(1,w*(ins?.22:.28)).toFixed(1));
+    hi.setAttribute("transform",`translate(${(-w*.2).toFixed(1)} ${(-w*.2).toFixed(1)})`);if(ins)hi.setAttribute("stroke","rgba(255,255,255,.13)");
+    p.parentNode.insertBefore(hi,p.nextSibling)})}
+const RZ_CSS=`.zTubeO,.zTubeH{fill:none;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}.zTubeH{stroke:rgba(255,255,255,.42)}
+.ins{stroke:#25292c}.zl{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.05em;fill:#3b4449;text-transform:uppercase}
+.zt{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.05em;fill:#3b4449}
+.zw{fill:#eef1f3}.valD{font-family:var(--mono);font-size:11px}.zlead{stroke:#4a5257;stroke-width:1;fill:none}
+@keyframes zorb{0%{transform:translate(3px,0)}25%{transform:translate(0,2px)}50%{transform:translate(-3px,0)}75%{transform:translate(0,-2px)}100%{transform:translate(3px,0)}}
+@keyframes zspin{to{transform:rotate(360deg)}}@keyframes zdash{to{stroke-dashoffset:-32}}@keyframes zslide{to{transform:translateX(8px)}}@keyframes zbub{to{transform:translateY(12px)}}@keyframes zbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.zOrb{animation:zorb .9s linear infinite}.zSpin{animation:zspin 1.2s linear infinite;transform-box:fill-box;transform-origin:center}.zFlow{fill:none;stroke-width:3;stroke-dasharray:7 9;stroke-linecap:round;animation:zdash 1s linear infinite}.zBob{animation:zbob 1.6s ease-in-out infinite}.zSlide{animation:zslide .35s linear infinite}.zBub{animation:zbub .9s linear infinite}
+@media (prefers-reduced-motion:reduce){.zOrb,.zSpin,.zFlow,.zBob,.zSlide,.zBub{animation:none}}
+.ill{background:#eef1f3;border-radius:6px}#reads b small{display:block;font-size:12px;opacity:.75;font-weight:500;font-family:var(--mono)}`;
+(function(){try{const st=document.createElement("style");st.textContent=RZ_CSS;document.head.appendChild(st)}catch(e){}})();
+
+// ---- small builders (main drawing scale) ----
+const zScrew=(x,y,r=3)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="url(#zScrew)" stroke="#4d555a" stroke-width=".6"/><path d="M${x-r*.6} ${y-r*.2} L${x+r*.6} ${y+r*.2}" stroke="#3a3f43" stroke-width="${(r*.25).toFixed(2)}"/>`;
+const zShade=(cx,cy,rx,ry=4)=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#000" opacity=".22" filter="url(#zSoft)"/>`;
+const zHex=(x,y,r,fill="url(#zBrass)")=>`<polygon points="${[0,1,2,3,4,5].map(i=>`${(x+r*Math.cos(i*Math.PI/3)).toFixed(1)},${(y+r*Math.sin(i*Math.PI/3)).toFixed(1)}`).join(" ")}" fill="${fill}" stroke="#5e400e" stroke-width=".8"/>`;
+const zCuStubV=(x,y1,y2,w=6)=>`<rect x="${x-w/2}" y="${y1}" width="${w}" height="${y2-y1}" fill="url(#zCuV)" stroke="#5a2a12" stroke-width=".6"/>`;
+const zCuStubH=(x1,x2,y,w=6)=>`<rect x="${x1}" y="${y-w/2}" width="${x2-x1}" height="${w}" fill="url(#zCuH)" stroke="#5a2a12" stroke-width=".6"/>`;
+// leader-line label
+const zLead=(x1,y1,x2,y2,tx,ty,t,anchor="start",cls="zt")=>`<path class="zlead" d="M${x1} ${y1} L${x2} ${y2}"/><circle cx="${x1}" cy="${y1}" r="1.8" fill="#4a5257"/><text class="${cls}" x="${tx}" y="${ty}" text-anchor="${anchor}">${t}</text>`;
+// hermetic compressor shell; ids optional
+function zCompressor(x,y,w,h,o={}){const cx=x+w/2,r=w/2;
+  return `${zShade(cx,y+h+2,w*.62,5)}
+  <rect x="${x-6}" y="${y+h-8}" width="${w+12}" height="9" rx="2" fill="url(#zSteelH)" stroke="#3b4247" stroke-width=".8"/>
+  ${[x-2,x+w-10].map(fx=>`<rect x="${fx}" y="${y+h-3}" width="12" height="6" rx="1.5" fill="#2a2f33"/>`).join("")}
+  <path class="hl" d="M${x} ${y+r*.9} Q${x} ${y} ${cx} ${y} Q${x+w} ${y} ${x+w} ${y+r*.9} V${y+h-8} H${x} Z" fill="url(#zShell)" stroke="#111" stroke-width="1"/>
+  <path d="M${x+4} ${y+r*.9} Q${x+6} ${y+6} ${cx} ${y+5}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="3"/>
+  <rect x="${x}" y="${y+h*.42}" width="${w}" height="3" fill="#15181a" opacity=".7"/>
+  ${o.term?`<rect x="${x+w-4}" y="${y+h*.5}" width="10" height="16" rx="2" fill="url(#zPlasticDk)" stroke="#111"/>`:""}`}
+// pressure switch on a tube (lamp shows state)
+const zPswitch=(x,y,lampId,w=24,h=20)=>`<g filter="url(#zShadow)"><rect x="${x+w/2-3}" y="${y+h-2}" width="6" height="6" fill="url(#zBrass)"/><rect class="hl" x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2.6}" fill="url(#zPlasticDk)" stroke="#111"/></g><path d="M${x+3} ${y+3} q-6 -6 -10 -2" stroke="#e8e8e8" stroke-width="1.6" fill="none"/><circle id="${lampId}" cx="${x+w/2}" cy="${y+h/2}" r="4" fill="var(--lamp-off)" stroke="#000" stroke-width=".6"/>`;
+// definite-purpose contactor; bar is the moving armature contact, seen through the window
+const zContactor=(x,y,w,h,barId,lampId,barY)=>`<g filter="url(#zShadow)"><rect class="hl" x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="url(#zPlasticDk)" stroke="#111"/></g>
+  <rect x="${x+3}" y="${y+3}" width="${w-6}" height="${h*.36}" rx="2" fill="#15181a"/>
+  <rect id="${barId}" x="${x+4}" y="${barY}" width="${w-8}" height="6" rx="1" fill="url(#zSteelH)"/>
+  ${zScrew(x+6,y+h*.55,2.6)}${zScrew(x+w-6,y+h*.55,2.6)}
+  <rect x="${x+w/2-7}" y="${y+h*.66}" width="14" height="${h*.26}" rx="2" fill="#cfa640" stroke="#6a4a12" stroke-width=".6"/>
+  <circle id="${lampId}" cx="${x+w/2}" cy="${y+h*.79}" r="3.4" fill="var(--lamp-off)" stroke="#000" stroke-width=".6"/>`;
+// dual run capacitor (bulgeId shows a swollen top)
+const zCap=(x,y,w,h,bulgeId)=>`<g filter="url(#zShadow)"><rect class="hl" x="${x}" y="${y+4}" width="${w}" height="${h-4}" rx="3" fill="url(#zAlu)" stroke="#5f686d"/></g>
+  <ellipse cx="${x+w/2}" cy="${y+5}" rx="${w/2}" ry="4" fill="url(#zAluTop)" stroke="#5f686d" stroke-width=".8"/>
+  ${[0.22,0.5,0.78].map(f=>`<rect x="${x+w*f-2}" y="${y-1}" width="4" height="5" fill="url(#zSteel)" stroke="#555" stroke-width=".4"/>`).join("")}
+  <rect x="${x+2}" y="${y+h*.45}" width="${w-4}" height="${h*.28}" fill="#f4f1ea" stroke="#999" stroke-width=".4"/><text x="${x+w/2}" y="${y+h*.63}" font-size="5.5" text-anchor="middle" font-family="sans-serif" fill="#333">45/5</text>
+  <path id="${bulgeId}" d="M${x} ${y+6} Q${x+w/2} ${y-12} ${x+w} ${y+6}" fill="url(#zAluTop)" stroke="var(--bad)" stroke-width="1.4" opacity="0"/>`;
+// pull-out disconnect box; handle id changes color when pulled
+const zDisc=(x,y,w,h,hId)=>`<g filter="url(#zShadow)"><rect class="hl" x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="url(#zSteel)" stroke="#5f686d"/></g><rect x="${x+2}" y="${y+2}" width="${w-4}" height="5" fill="#9aa3a9"/>
+  <rect id="${hId}" x="${x+7}" y="${y+9}" width="${w-14}" height="${h-17}" rx="2" fill="var(--plate)" stroke="#000" stroke-width=".6"/><rect x="${x+w/2-4}" y="${y+h*.45}" width="8" height="4" rx="1" fill="#cfd5d9"/>
+  <rect x="${x+w/2-3}" y="${y+h}" width="6" height="6" fill="#6c747a"/>`;
+// liquid line filter drier
+const zDrier=(x,y,w,h,frostId)=>`<g filter="url(#zShadow)">${zCuStubH(x-6,x+2,y+h/2,5)}${zCuStubH(x+w-2,x+w+6,y+h/2,5)}<rect class="hl" x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="url(#zBlue)" stroke="#14202c"/></g>
+  <path d="M${x+4} ${y+3} H${x+w-4}" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-linecap="round"/><path d="M${x+w*.6} ${y+h/2} l6 0 m-3 -3 l3 3 -3 3" stroke="#fff" stroke-width="1" fill="none"/>
+  <rect id="${frostId}" x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="var(--ice)" opacity="0"/>`;
+// wall thermostat with an LCD
+const zTstat=(x,y,w,h,txtId,lampId,init="74")=>`<g filter="url(#zShadow)"><rect class="hl" x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="url(#zPlastic)" stroke="#8f887a"/></g>
+  <rect x="${x+6}" y="${y+7}" width="${w-12}" height="${h*.48}" rx="3" fill="url(#zLcd)" stroke="#6e7f71" stroke-width=".8"/>
+  <text id="${txtId}" x="${x+w/2}" y="${y+7+h*.4}" text-anchor="middle" font-family="var(--mono)" font-size="15" fill="#1f2a22">${init}</text>
+  <circle id="${lampId}" cx="${x+w/2}" cy="${y+h-9}" r="3" fill="var(--lamp-off)" stroke="#777" stroke-width=".6"/>`;
+// pleated filter seen edge-on
+const zFilter=(x,y,w,h,dirtId)=>`<rect class="hl" x="${x}" y="${y}" width="${w}" height="${h}" rx="1" fill="url(#zTan)" stroke="#7d6b45"/><rect x="${x+3}" y="${y+3}" width="${w-6}" height="${h-6}" fill="url(#zPleat)"/>
+  <path d="M${x+3} ${y+4} ${Array.from({length:Math.floor((h-8)/5)},(_,i)=>`L${i%2?x+3:x+w-3} ${y+6+i*5}`).join(" ")}" fill="none" stroke="#b9b09c" stroke-width="1"/>
+  <rect id="${dirtId}" x="${x}" y="${y}" width="${w}" height="${h}" fill="#6b5a3a" opacity="0"/>`;
+// blower: scroll housing with squirrel-cage wheel (bladesId rotates around cx,cy)
+const zBlower=(cx,cy,r,bladesId)=>`${zShade(cx,cy+r+6,r*1.05,4)}
+  <path class="hl" d="M${cx+r*1.18} ${cy-r*1.32} V${cy} A${r*1.18} ${r*1.18} 0 1 1 ${cx} ${cy-r*1.18} Z" fill="url(#zSteelH)" stroke="#4d555a" stroke-width="1.2"/>
+  <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#zInside)"/>
+  <g id="${bladesId}">${Array.from({length:24},(_,i)=>{const a=i*15*Math.PI/180,x1=cx+r*.62*Math.cos(a),y1=cy+r*.62*Math.sin(a),x2=cx+r*.95*Math.cos(a+.25),y2=cy+r*.95*Math.sin(a+.25);return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#b9c1c6" stroke-width="2"/>`}).join("")}
+   <circle cx="${cx}" cy="${cy}" r="${r*.6}" fill="none" stroke="#7d868c" stroke-width="1.5"/><line x1="${cx-r*.55}" y1="${cy}" x2="${cx+r*.55}" y2="${cy}" stroke="#7d868c" stroke-width="2"/></g>
+  <circle cx="${cx}" cy="${cy}" r="${r*.34}" fill="url(#zMotor)" stroke="#111"/><circle cx="${cx}" cy="${cy}" r="${r*.1}" fill="url(#zScrew)"/>`;
+// condenser fan seen from the side: wire guard on top, blade (ellipse id animates rx)
+const zFanTop=(x,y,w,h,fbId,cx,cy,gId)=>`<rect class="hl" x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="url(#zPlasticDk)" stroke="#111"/>
+  <rect x="${x+3}" y="${y+2}" width="${w-6}" height="${h-4}" fill="url(#zGrille)" opacity=".9"/>
+  <g id="${gId||fbId+"g"}"><ellipse id="${fbId}" cx="${cx}" cy="${cy}" rx="40" ry="4" fill="#3a4045" stroke="#111" stroke-width=".6"/></g>
+  <rect x="${cx-7}" y="${y+h-1}" width="14" height="14" rx="2" fill="url(#zMotor)" stroke="#111"/>`;
+// manifold gauge face
+function zGauge(cx,cy,r,col,needleId,maxLbl){let t="";for(let i=0;i<=20;i++){const a=(-135+i*13.5)*Math.PI/180,l=i%5?4:8;t+=`<line x1="${(cx+(r-3)*Math.sin(a)).toFixed(1)}" y1="${(cy-(r-3)*Math.cos(a)).toFixed(1)}" x2="${(cx+(r-3-l)*Math.sin(a)).toFixed(1)}" y2="${(cy-(r-3-l)*Math.cos(a)).toFixed(1)}" stroke="#222" stroke-width="${i%5?.7:1.2}"/>`}
+  return `${zShade(cx,cy+r+6,r*.8,3)}<circle cx="${cx}" cy="${cy}" r="${r+5}" fill="${col}" stroke="#111"/><circle cx="${cx}" cy="${cy}" r="${r+2}" fill="url(#zSteel)"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="#fbfbf8" stroke="#888" stroke-width=".8"/>${t}`}
+
+// ---- part-card drawings, 340x250 ----
+const ZILL={};
+const zillSvg=k=>ZILL[k]?`<svg class="ill" viewBox="0 0 340 250" aria-hidden="true">${typeof ZILL[k]==="function"?ZILL[k]():ZILL[k]}</svg>`:"";
+
+const zL=(x1,y1,x2,y2,tx,ty,t,anchor="start")=>`<path d="M${x1} ${y1} L${x2} ${y2}" stroke="#4a5257" stroke-width="1" fill="none"/><circle cx="${x1}" cy="${y1}" r="2" fill="#4a5257"/><text x="${tx}" y="${ty}" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="600" fill="#2a3135" text-anchor="${anchor}">${t}</text>`;
+const zFA=(d,col)=>`<path d="${d}" stroke="${col}" class="zFlow"/>`;
+function zSpiral(cx,cy,a0,turns,b,rot){let d="";for(let i=0;i<=turns*48;i++){const t=i/48*2*Math.PI,r=4+b*t,x=cx+r*Math.cos(t+a0+rot),y=cy+r*0.62*Math.sin(t+a0+rot);d+=(i?"L":"M")+x.toFixed(1)+" "+y.toFixed(1)}return d}
+ZILL.compressor=`
+ ${zShade(170,232,96)}
+ <path d="M84 222 L256 222 L246 210 L94 210 Z" fill="url(#zPlasticDk)"/>
+ ${[104,236].map(x=>`<ellipse cx="${x}" cy="216" rx="9" ry="4" fill="#111"/>`).join("")}
+ <g filter="url(#zShadow)">
+  <rect x="110" y="62" width="120" height="150" fill="url(#zShell)"/>
+  <ellipse cx="170" cy="212" rx="60" ry="10" fill="#15181a"/>
+  <path d="M110 62 Q110 22 170 22 Q230 22 230 62 Z" fill="url(#zDome)"/>
+  <ellipse cx="170" cy="62" rx="60" ry="9" fill="none" stroke="#0e1012" stroke-width="2"/>
+  <ellipse cx="170" cy="62" rx="60" ry="9" fill="none" stroke="#8a9399" stroke-width=".8" transform="translate(0,2)" opacity=".5"/>
+  <rect x="126" y="34" width="9" height="176" rx="4" fill="#fff" opacity=".1"/>
+ </g>
+ <!-- discharge -->
+ <rect x="164" y="2" width="12" height="24" fill="url(#zCuV)"/><rect x="161" y="18" width="18" height="6" rx="2" fill="url(#zBrass)"/>
+ ${zFA("M170 30 V4","#ff4a3a","cDis")}
+ <!-- suction -->
+ <rect x="228" y="148" width="84" height="13" fill="url(#zCuH)"/><rect x="228" y="145" width="8" height="19" rx="2" fill="url(#zBrass)"/>
+ ${zFA("M314 154 H232","#6fb3e8","cSuc")}
+ <!-- terminal box -->
+ <rect x="94" y="100" width="20" height="34" rx="3" fill="url(#zPlasticDk)" stroke="#000"/><circle cx="104" cy="106" r="2" fill="url(#zScrew)"/><circle cx="104" cy="128" r="2" fill="url(#zScrew)"/>
+ <!-- cutaway window -->
+ <clipPath id="zc_cwin"><path d="M134 88 L210 84 L214 150 L200 156 L190 150 L170 158 L150 151 L136 156 Z"/></clipPath>
+ <g clip-path="url(#zc_cwin)">
+  <rect x="120" y="80" width="110" height="90" fill="url(#zInside)"/>
+  <ellipse cx="172" cy="118" rx="42" ry="27" fill="#2a2f33" stroke="#555d62"/>
+  
+  <path d="${zSpiral(172,118,0,3.1,3.6,0)}" fill="none" stroke="#c9d0d4" stroke-width="3.2"/>
+  <path class="zOrb" d="${zSpiral(172,118,Math.PI,3.1,3.6,0)}" fill="none" stroke="#f0a040" stroke-width="3.2"/>
+  <circle cx="172" cy="118" r="3" fill="#ff4a3a"/>
+ </g>
+ <path d="M134 88 L210 84 L214 150 L200 156 L190 150 L170 158 L150 151 L136 156 Z" fill="none" stroke="#9aa3a9" stroke-width="2.2" stroke-linejoin="round"/>
+ ${zL(140,130,60,160,6,164,"Fixed scroll")}${zL(196,104,262,90,258,84,"Orbiting scroll","start")}
+ ${zL(104,116,40,96,6,92,"Terminals")}${zL(260,154,276,186,236,204,"Suction (cool vapor)")}${zL(176,12,214,12,218,15,"Discharge (hot gas)")}
+`;
+
+
+ZILL.txv=`
+ ${zShade(170,236,120)}
+ <!-- inlet liquid line -->
+ <rect x="0" y="118" width="122" height="14" fill="url(#zCuH)"/>
+ <polygon points="104,112 122,112 126,125 122,138 104,138 100,125" fill="url(#zBrassH)" stroke="#5e400e"/>
+ ${zFA("M6 125 H98","#f08a2a","tLiq")}
+ <!-- outlet -->
+ <rect x="163" y="176" width="14" height="66" fill="url(#zCuV)"/>
+ <polygon points="158,172 182,172 186,182 182,192 158,192 154,182" fill="url(#zBrassH)" stroke="#5e400e"/>
+ ${zFA("M170 196 V240","#3d7de0","tMix")}
+ <!-- body -->
+ <g filter="url(#zShadow)">
+  <rect x="122" y="100" width="96" height="74" rx="8" fill="url(#zBrass)" stroke="#5e400e"/>
+  <rect x="126" y="70" width="88" height="26" rx="12" fill="url(#zSteel)" stroke="#5f686d"/>
+  <rect x="134" y="94" width="72" height="8" fill="url(#zBrassH)"/>
+  <rect x="200" y="160" width="40" height="8" fill="url(#zCuH)"/>
+ </g>
+ <!-- capillary + bulb -->
+ <path d="M170 70 C170 40 200 30 230 40 C262 50 250 72 232 66 C214 60 226 44 246 50 C272 58 286 120 280 200" fill="none" stroke="#9aa3aa" stroke-width="2.4"/>
+ <rect x="226" y="198" width="104" height="18" fill="url(#zCuH)"/>
+ <rect x="262" y="194" width="42" height="12" rx="6" fill="url(#zSteelH)" stroke="#5f686d"/>
+ <rect x="268" y="192" width="4" height="26" fill="#3a3f44"/><rect x="294" y="192" width="4" height="26" fill="#3a3f44"/>
+ ${zFA("M232 207 H330","#6fb3e8","tSuc")}
+ <!-- cutaway of body -->
+ <clipPath id="zc_tcut"><path d="M132 106 H208 V166 H132 Z"/></clipPath>
+ <g clip-path="url(#zc_tcut)">
+  <rect x="128" y="100" width="90" height="72" fill="url(#zInside)"/>
+  <path d="M128 120 H166 V132 H128 Z" fill="url(#zLiq)"/>
+  <path d="M162 138 H178 V172 H162 Z" fill="url(#zMix)"/>
+  <g class="zBub">${[0,1,2,3,4].map(i=>`<circle cx="${166+(i%2)*8}" cy="${142+i*6}" r="1.8" fill="#dfeeff"/>`).join("")}</g>
+  <path d="M160 132 L170 140 L180 132 Z" fill="#7a5a1a"/>
+  <g class="zBob"><rect x="167" y="104" width="6" height="30" fill="url(#zSteel)"/><path d="M167 134 L170 140 L173 134 Z" fill="#c9d0d4"/></g>
+  <path d="M186 140 l6 4 l-6 4 l6 4 l-6 4 l6 4" stroke="#c9d0d4" stroke-width="2" fill="none"/>
+ </g>
+ <path d="M132 106 H208 V166 H132 Z" fill="none" stroke="#e8cd78" stroke-width="2"/>
+ <path d="M132 84 Q170 88 208 84" stroke="#2a3135" stroke-width="2" fill="none"/>
+ ${zL(144,126,60,96,6,92,"High-pressure liquid in")}${zL(170,112,96,54,20,50,"Pin and seat (orifice)")}${zL(150,84,110,24,40,20,"Diaphragm (power head)")}
+ ${zL(174,214,110,226,6,230,"Low-pressure mix out")}${zL(300,214,300,230,206,244,"Bulb on suction line")}
+`;
+
+
+const zScrewL=(x,y)=>`<circle cx="${x}" cy="${y}" r="7" fill="url(#zScrew)" stroke="#4d555a"/><path d="M${x-4.5} ${y-1.5} L${x+4.5} ${y+1.5}" stroke="#3a3f43" stroke-width="1.6"/>`;
+const zWireL=(x,y1,y2,grad)=>`<rect x="${x-5}" y="${y1}" width="10" height="${y2-y1}" rx="4" fill="url(#${grad})"/>`;
+ZILL.contactor=`
+ ${zShade(170,236,88)}
+ ${zWireL(130,0,46,"zWireBk")}${zWireL(210,0,46,"zWireRd")}
+ ${zWireL(130,206,250,"zWireBk")}${zWireL(210,206,250,"zWireRd")}
+ <g filter="url(#zShadow)">
+  <rect x="96" y="34" width="148" height="186" rx="10" fill="url(#zPlastic)" stroke="#8e8777"/>
+  <rect x="100" y="38" width="140" height="36" rx="6" fill="url(#zPlasticDk)"/>
+  <rect x="100" y="182" width="140" height="34" rx="6" fill="url(#zPlasticDk)"/>
+ </g>
+ <rect x="124" y="46" width="14" height="10" fill="#d48a52"/><rect x="204" y="46" width="14" height="10" fill="#d48a52"/>
+ <rect x="124" y="192" width="14" height="10" fill="#d48a52"/><rect x="204" y="192" width="14" height="10" fill="#d48a52"/>
+ ${zScrewL(130,58)}${zScrewL(210,58)}${zScrewL(130,198)}${zScrewL(210,198)}
+ <text x="152" y="62" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#e9ecee">L1</text><text x="176" y="62" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#e9ecee">L2</text>
+ <text x="152" y="203" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#e9ecee">T1</text><text x="176" y="203" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#e9ecee">T2</text>
+ <!-- window showing contacts and armature -->
+ <rect x="112" y="84" width="116" height="88" rx="6" fill="#1e2326" stroke="#6b7378"/>
+ <rect x="120" y="92" width="100" height="10" rx="2" fill="#6b747a"/>
+ <g>
+  <rect x="122" y="104" width="96" height="10" rx="3" fill="url(#zSteelH)"/>
+  <rect x="124" y="114" width="12" height="6" fill="#d9dee1"/><rect x="204" y="114" width="12" height="6" fill="#d9dee1"/>
+  <rect x="160" y="114" width="20" height="18" fill="#7d868c"/>
+ </g>
+ <rect x="122" y="124" width="16" height="8" fill="#d9dee1"/><rect x="202" y="124" width="16" height="8" fill="#d9dee1"/>
+ <g opacity="0"><path d="M130 120 l3 -4 l2 4 l3 -4" stroke="#9fd8ff" stroke-width="1.6" fill="none" filter="url(#zGlow)"/></g>
+ <rect x="146" y="138" width="48" height="28" rx="3" fill="url(#zWind)" stroke="#5a2e10"/>
+ <rect x="146" y="138" width="48" height="28" rx="3" fill="#ffd27a" opacity="0" filter="url(#zGlow)"/>
+ <!-- coil terminals -->
+ <rect x="240" y="124" width="22" height="7" rx="1.5" fill="url(#zSteelH)"/><rect x="240" y="146" width="22" height="7" rx="1.5" fill="url(#zSteelH)"/>
+ <path d="M262 127 H300 C320 127 322 100 340 96" stroke="url(#zWireYl)" stroke-width="5" fill="none"/>
+ <path d="M262 149 H300 C320 149 322 170 340 176" stroke="url(#zWireBl)" stroke-width="5" fill="none"/>
+ <text x="244" y="120" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#2a3135">A1</text><text x="244" y="166" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#2a3135">A2</text>
+ ${zL(124,108,60,96,6,92,"Moving contacts")}${zL(150,152,60,170,6,174,"24 V coil")}${zL(210,58,268,40,254,36,"Line in","start")}${zL(210,198,268,222,254,234,"Load out","start")}
+ <text x="6" y="244" text-anchor="start" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#2a3135">PULLED IN</text>
+`;
+
+
+ZILL.cap=`
+ ${zShade(170,236,64)}
+ <g filter="url(#zShadow)">
+  <rect x="116" y="50" width="108" height="176" rx="6" fill="url(#zAlu)"/>
+  <ellipse cx="170" cy="226" rx="54" ry="9" fill="#7e868b"/>
+  <ellipse cx="170" cy="50" rx="54" ry="11" fill="url(#zAluTop)" stroke="#8f979d"/>
+  <rect x="116" y="96" width="108" height="92" fill="#f2f0e9" opacity=".92"/>
+  <rect x="116" y="96" width="108" height="92" fill="url(#zAlu)" opacity=".28"/>
+ </g>
+ <ellipse cx="170" cy="46" rx="30" ry="6" fill="#2f3337"/>
+ ${[[140,"HERM"],[170,"C"],[200,"FAN"]].map(([x,t])=>`${[-6,0,6].map(d=>`<rect x="${x+d-2}" y="26" width="4" height="18" fill="url(#zSteel)" stroke="#6f787e" stroke-width=".5"/>`).join("")}`).join("")}
+ <text x="170" y="122" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="17" font-weight="700" fill="#1d2327">45 + 5 µF</text>
+ <text x="170" y="142" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="11" font-weight="600" fill="#3a4246">±6%  440 VAC  60 Hz</text>
+ <text x="170" y="160" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#5b666d">DUAL RUN CAPACITOR · OIL FILLED</text>
+ <rect x="124" y="54" width="10" height="168" rx="4" fill="#fff" opacity=".35"/>
+ ${zL(140,40,80,60,6,64,"Compressor (HERM)")}${zL(200,40,262,64,250,80,"Fan motor (FAN)","start")}${zL(170,40,170,4,182,8,"Common (C)","start")}
+`;
+
+
+ZILL.motor3=`
+ ${zShade(170,232,130)}
+ <g filter="url(#zShadow)">
+  <rect x="60" y="208" width="44" height="14" rx="2" fill="#253b52"/><rect x="226" y="208" width="44" height="14" rx="2" fill="#253b52"/>
+  <rect x="62" y="86" width="196" height="124" rx="16" fill="url(#zBlue)"/>
+  ${Array.from({length:11},(_,i)=>`<rect x="70" y="${92+i*10.5}" width="180" height="4" rx="2" fill="#1d3247" opacity=".55"/><rect x="70" y="${95.5+i*10.5}" width="180" height="1.5" fill="#9fc0dd" opacity=".35"/>`).join("")}
+  <rect x="22" y="94" width="44" height="108" rx="10" fill="url(#zBlue)"/>
+  ${Array.from({length:9},(_,i)=>`<rect x="30" y="${102+i*10.5}" width="30" height="4" rx="2" fill="#0e1a26" opacity=".8"/>`).join("")}
+  <rect x="254" y="100" width="22" height="96" rx="8" fill="url(#zBlue)"/>
+  <rect x="120" y="58" width="70" height="32" rx="4" fill="url(#zBlue)"/><rect x="190" y="66" width="34" height="14" fill="url(#zSteelH)"/>
+ </g>
+ <rect x="276" y="140" width="56" height="16" fill="url(#zSteelH)"/><rect x="300" y="138" width="20" height="4" fill="#5f686d"/>
+ <!-- cutaway -->
+ <clipPath id="zc_mcut"><path d="M110 104 L232 104 L232 196 L110 196 Z"/></clipPath>
+ <g clip-path="url(#zc_mcut)">
+  <rect x="100" y="100" width="140" height="100" fill="url(#zInside)"/>
+  <rect x="108" y="104" width="126" height="20" fill="url(#zLam)"/><rect x="108" y="176" width="126" height="20" fill="url(#zLam)"/>
+  <rect x="104" y="106" width="16" height="88" rx="6" fill="url(#zWind)"/><rect x="222" y="106" width="16" height="88" rx="6" fill="url(#zWind)"/>
+  <rect x="120" y="116" width="102" height="8" fill="url(#zWind)"/><rect x="120" y="176" width="102" height="8" fill="url(#zWind)"/>
+  <rect x="122" y="128" width="98" height="44" rx="3" fill="url(#zLam)"/>
+  <clipPath id="zc_mrot"><rect x="122" y="128" width="98" height="44" rx="3"/></clipPath><g clip-path="url(#zc_mrot)"><g class="zSlide">${Array.from({length:16},(_,i)=>`<path d="M${118+i*8} 128 L${126+i*8} 172" stroke="#c4884a" stroke-width="3"/>`).join("")}</g></g>
+  <rect x="122" y="128" width="98" height="44" rx="3" fill="none" stroke="#2a3135"/>
+  <rect x="232" y="144" width="44" height="8" fill="url(#zSteelH)"/>
+ </g>
+ <path d="M110 104 L232 104 L232 196 L110 196 Z" fill="none" stroke="#9fc0dd" stroke-width="2"/>
+ ${zL(112,140,60,60,6,54,"Stator winding (copper)")}${zL(170,150,170,236,180,246,"Rotor bars (aluminum)","start")}${zL(40,140,10,236,6,246,"Shaft fan cowl")}${zL(150,66,150,30,160,30,"Terminal box","start")}${zL(300,148,320,120,284,112,"Shaft","start")}
+`;
+
+rzEnsureDefs();
+
 const ATM=14.7;
 // saturation pressure (psig) vs water temperature (°F), from steam tables
 const SAT=[[212,0],[230,6.1],[250,15.1],[274,30],[298,50],[320,75],[338,100],[366,150],[388,200],[406,250]];
@@ -275,46 +574,46 @@ const PHOTOS={
   rad:[["Hoffman 1A radiator air vent","https://www.supplyhouse.com/Hoffman-401422-1A-1-8-Adjustable-Angle-Steam-Radiator-Air-Valve-3516000-p"]],
   hartford:[["Hartford loop diagram (HeatingHelp)","https://heatinghelp.com/systems-help-center/what-you-should-know-about-the-hartford-loop/"]]}};
 // Part drawings, 160x120, styled after the common products linked under "See it"
-const K="#2a2d30",BR="#c9a24a",BRD="#8a6a22",IR="#4a4f54",ST="#9aa3aa",STL="#c4cacf",RD="#b8322a",WH="#f4f4f0",GL="#cfe6f5",WA="#4f86d1";
+const K="#2a2d30",BR="url(#zBrass)",BRD="#8a6a22",IR="url(#bzIron)",ST="url(#zSteelH)",STL="url(#zSteel)",RD="#b8322a",WH="#f4f4f0",GL="#cfe6f5",WA="#4f86d1";
 const pipeH=(x1,x2,y,w=10,c=ST)=>`<rect x="${x1}" y="${y-w/2}" width="${x2-x1}" height="${w}" fill="${c}" stroke="${K}" stroke-width="1"/>`;
-const pipeV=(x,y1,y2,w=10,c=ST)=>`<rect x="${x-w/2}" y="${y1}" width="${w}" height="${y2-y1}" fill="${c}" stroke="${K}" stroke-width="1"/>`;
+const pipeV=(x,y1,y2,w=10,c="url(#zSteel)")=>`<rect x="${x-w/2}" y="${y1}" width="${w}" height="${y2-y1}" fill="${c}" stroke="${K}" stroke-width="1"/>`;
 const hexnut=(x,y,r=8,c=BR)=>`<polygon points="${[0,1,2,3,4,5].map(i=>`${x+r*Math.cos(i*Math.PI/3)},${y+r*Math.sin(i*Math.PI/3)}`).join(" ")}" fill="${c}" stroke="${BRD}"/>`;
 const dial=(cx,cy,r,max,label,val=0.3)=>{let t="";for(let i=0;i<=10;i++){const a=(-135+i*27)*Math.PI/180;t+=`<line x1="${cx+(r-2)*Math.sin(a)}" y1="${cy-(r-2)*Math.cos(a)}" x2="${cx+(r-6)*Math.sin(a)}" y2="${cy-(r-6)*Math.cos(a)}" stroke="${K}" stroke-width="1"/>`}
   const a=(-135+val*270)*Math.PI/180;return `<circle cx="${cx}" cy="${cy}" r="${r+3}" fill="${STL}" stroke="${K}"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="${WH}" stroke="${K}" stroke-width=".8"/>${t}<text x="${cx}" y="${cy+r*.45}" font-size="${r*.28}" text-anchor="middle" font-family="sans-serif" fill="${K}">${label}</text><line x1="${cx}" y1="${cy}" x2="${cx+(r-7)*Math.sin(a)}" y2="${cy-(r-7)*Math.cos(a)}" stroke="${RD}" stroke-width="2" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="2.5" fill="${K}"/>`};
-const box=(x,y,w,h,c,r=4)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${c}" stroke="${K}" stroke-width="1.2"/>`;
+const box=(x,y,w,h,c,r=4)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${c}" stroke="${K}" stroke-width="1.2" filter="url(#zShadow)"/>`;
 const label=(x,y,s,c=K,sz=8)=>`<text x="${x}" y="${y}" font-size="${sz}" text-anchor="middle" font-family="sans-serif" font-weight="600" fill="${c}">${s}</text>`;
 const flame=(x,y)=>`<path d="M${x} ${y} q4 -14 8 0 q4 -18 9 0 q4 -14 8 0 z" fill="#f08a1c"/><path d="M${x+4} ${y} q3 -7 6 0 q3 -9 6 0 z" fill="#3c7bf0"/>`;
 const ILL={
- boiler_h:`${pipeV(64,6,22,12,IR)}${box(30,22,100,90,"#7b8e9e",6)}${box(38,30,84,30,"#8fa2b2",3)}${[0,1,2,3,4,5].map(i=>`<line x1="${46+i*13}" y1="34" x2="${46+i*13}" y2="56" stroke="${K}" stroke-width="1"/>`).join("")}${box(40,68,80,36,"#22262a",3)}${box(56,78,22,16,"#f5d36b",2)}${flame(58,92)}${pipeH(120,150,40,8,"#c06a5a")}${pipeH(120,150,96,8,"#6a8cc6")}${label(80,18,"CAST-IRON BOILER",K,7)}`,
- boiler_s:`${pipeV(70,6,22,12,IR)}${box(34,22,96,90,"#7b8e9e",6)}${box(44,70,76,36,"#22262a",3)}${flame(66,100)}${box(16,40,8,44,GL,2)}<rect x="18" y="60" width="4" height="24" fill="${WA}"/>${pipeH(24,34,44,4)}${pipeH(24,34,80,4)}${pipeV(112,8,22,8,BR)}${box(106,2,12,10,BR,2)}${box(132,48,22,38,IR,8)}${pipeH(130,132,56,4)}${pipeH(130,132,80,4)}${label(82,62,"STEAM BOILER",WH,8)}`,
- burner:`${box(20,20,74,56,"#5a6168",4)}${box(26,26,62,16,"#3a3f44",2)}${label(57,37,"IGNITION",WH,7)}${[0,1,2,3,4].map(i=>`<rect x="${30+i*11}" y="52" width="7" height="14" fill="${STL}" stroke="${K}" stroke-width=".8"/>`).join("")}<path d="M60 76 C60 96 96 92 104 84" stroke="#e8c33a" stroke-width="2" fill="none"/><path d="M50 76 C50 100 100 100 112 90" stroke="${RD}" stroke-width="2" fill="none"/>${box(104,66,40,12,ST,2)}${pipeH(104,148,96,8,ST)}<rect x="132" y="70" width="2" height="30" fill="${K}"/>${flame(118,92)}${label(124,112,"PILOT + FLAME ROD",K,7)}`,
- gas:`${pipeH(6,40,70,14,IR)}${pipeH(120,154,70,14,IR)}${box(40,46,80,50,"#3b4045",5)}${box(56,22,48,26,"#5c636a",4)}<circle cx="80" cy="35" r="10" fill="${RD}" stroke="${K}"/><rect x="77" y="27" width="6" height="16" fill="${WH}" rx="1"/>${label(80,76,"GAS VALVE",WH,8)}${label(80,88,"ON  OFF",STL,6)}<path d="M120 52 l14 -10 M120 56 l18 -6" stroke="${RD}" stroke-width="1.5"/>`,
- aquastat:`${box(26,14,108,74,"#9aa1a8",6)}${box(34,22,92,40,"#c9ced2",3)}${dial(80,42,16,240,"°F",.55)}${label(80,76,"AQUASTAT RELAY",K,7)}<circle cx="34" cy="80" r="5" fill="${IR}"/><circle cx="126" cy="80" r="5" fill="${IR}"/>${pipeV(80,88,112,10,BR)}${hexnut(80,92,8)}`,
- mrhl:`${box(40,14,80,70,"#9aa1a8",6)}${dial(80,40,16,270,"°F",.7)}<circle cx="80" cy="70" r="7" fill="${RD}" stroke="${K}"/>${label(80,94,"MANUAL RESET",K,7)}${pipeV(80,84,114,10,BR)}${hexnut(80,88,8)}`,
- lwco_h:`${box(40,14,80,64,"#3a3f44",6)}<circle cx="64" cy="40" r="7" fill="${RD}" stroke="${K}"/><circle cx="96" cy="40" r="7" fill="${STL}" stroke="${K}"/>${label(64,58,"RESET",WH,6)}${label(96,58,"TEST",WH,6)}<circle cx="80" cy="24" r="3" fill="#2fbf5a"/>${hexnut(80,84,12)}${pipeV(80,88,114,6,STL)}${label(80,8,"LOW WATER CUTOFF",K,7)}`,
+ boiler_h:`${pipeV(64,6,22,12,IR)}${box(30,22,100,90,"url(#bzJacket)",6)}${box(38,30,84,30,"url(#zSteelH)",3)}${[0,1,2,3,4,5].map(i=>`<line x1="${46+i*13}" y1="34" x2="${46+i*13}" y2="56" stroke="${K}" stroke-width="1"/>`).join("")}${box(40,68,80,36,"url(#zPlasticDk)",3)}${box(56,78,22,16,"#f5d36b",2)}${flame(58,92)}${pipeH(120,150,40,8,"#c06a5a")}${pipeH(120,150,96,8,"#6a8cc6")}${label(80,18,"CAST-IRON BOILER",K,7)}`,
+ boiler_s:`${pipeV(70,6,22,12,IR)}${box(34,22,96,90,"url(#bzJacket)",6)}${box(44,70,76,36,"url(#zPlasticDk)",3)}${flame(66,100)}${box(16,40,8,44,GL,2)}<rect x="18" y="60" width="4" height="24" fill="${WA}"/>${pipeH(24,34,44,4)}${pipeH(24,34,80,4)}${pipeV(112,8,22,8,BR)}${box(106,2,12,10,BR,2)}${box(132,48,22,38,IR,8)}${pipeH(130,132,56,4)}${pipeH(130,132,80,4)}${label(82,62,"STEAM BOILER",WH,8)}`,
+ burner:`${box(20,20,74,56,"url(#zSteelH)",4)}${box(26,26,62,16,"url(#zPlasticDk)",2)}${label(57,37,"IGNITION",WH,7)}${[0,1,2,3,4].map(i=>`<rect x="${30+i*11}" y="52" width="7" height="14" fill="${STL}" stroke="${K}" stroke-width=".8"/>`).join("")}<path d="M60 76 C60 96 96 92 104 84" stroke="#e8c33a" stroke-width="2" fill="none"/><path d="M50 76 C50 100 100 100 112 90" stroke="${RD}" stroke-width="2" fill="none"/>${box(104,66,40,12,ST,2)}${pipeH(104,148,96,8,ST)}<rect x="132" y="70" width="2" height="30" fill="${K}"/>${flame(118,92)}${label(124,112,"PILOT + FLAME ROD",K,7)}`,
+ gas:`${pipeH(6,40,70,14,IR)}${pipeH(120,154,70,14,IR)}${box(40,46,80,50,"url(#zPlasticDk)",5)}${box(56,22,48,26,"url(#zAlu)",4)}<circle cx="80" cy="35" r="10" fill="${RD}" stroke="${K}"/><rect x="77" y="27" width="6" height="16" fill="${WH}" rx="1"/>${label(80,76,"GAS VALVE",WH,8)}${label(80,88,"ON  OFF",STL,6)}<path d="M120 52 l14 -10 M120 56 l18 -6" stroke="${RD}" stroke-width="1.5"/>`,
+ aquastat:`${box(26,14,108,74,"url(#zSteelH)",6)}${box(34,22,92,40,"url(#zAlu)",3)}${dial(80,42,16,240,"°F",.55)}${label(80,76,"AQUASTAT RELAY",K,7)}<circle cx="34" cy="80" r="5" fill="${IR}"/><circle cx="126" cy="80" r="5" fill="${IR}"/>${pipeV(80,88,112,10,BR)}${hexnut(80,92,8)}`,
+ mrhl:`${box(40,14,80,70,"url(#zSteelH)",6)}${dial(80,40,16,270,"°F",.7)}<circle cx="80" cy="70" r="7" fill="${RD}" stroke="${K}"/>${label(80,94,"MANUAL RESET",K,7)}${pipeV(80,84,114,10,BR)}${hexnut(80,88,8)}`,
+ lwco_h:`${box(40,14,80,64,"url(#zPlasticDk)",6)}<circle cx="64" cy="40" r="7" fill="${RD}" stroke="${K}"/><circle cx="96" cy="40" r="7" fill="${STL}" stroke="${K}"/>${label(64,58,"RESET",WH,6)}${label(96,58,"TEST",WH,6)}<circle cx="80" cy="24" r="3" fill="#2fbf5a"/>${hexnut(80,84,12)}${pipeV(80,88,114,6,STL)}${label(80,8,"LOW WATER CUTOFF",K,7)}`,
  relief:`${pipeH(14,52,92,16,BR)}${box(52,48,40,60,BR,8)}<rect x="64" y="20" width="16" height="30" rx="3" fill="${BR}" stroke="${BRD}"/><rect x="58" y="12" width="44" height="8" rx="2" fill="${BRD}" transform="rotate(-12 80 16)"/>${pipeH(92,140,64,16,BR)}${pipeV(72,108,118,14,BR)}<rect x="40" y="56" width="10" height="20" fill="${WH}" stroke="${K}" stroke-width=".6"/>${label(45,68,"30",K,6)}${label(116,104,"TO DRAIN",K,7)}`,
  gauge_h:`${dial(80,56,40,75,"PSI · °F",.25)}<path d="M54 56 A26 26 0 0 1 106 56" fill="none" stroke="${WA}" stroke-width="3"/>${label(80,36,"ALTITUDE",K,6)}${pipeV(80,96,116,8,BR)}`,
- gauge_s:`${dial(80,46,32,30,"0–30 PSI",.1)}${pipeV(80,78,88,6,BR)}<circle cx="80" cy="96" r="9" fill="none" stroke="${BR}" stroke-width="5"/>${pipeV(80,104,118,6,BR)}${label(122,98,"PIGTAIL",K,7)}`,
- tank:`${pipeV(80,96,118,8,BR)}<path d="M50 30 Q50 14 80 14 Q110 14 110 30 V80 Q110 98 80 98 Q50 98 50 80 Z" fill="#6b8fb3" stroke="${K}" stroke-width="1.2"/><line x1="50" y1="56" x2="110" y2="56" stroke="${K}" stroke-dasharray="3 2"/>${label(80,42,"AIR",WH,9)}${label(80,76,"WATER",WH,9)}<rect x="76" y="6" width="8" height="9" fill="${BR}" stroke="${K}"/>${label(124,12,"AIR VALVE",K,6)}`,
+ gauge_s:`${dial(80,46,32,30,"0–30 PSI",.1)}${pipeV(80,78,88,6,BR)}<circle cx="80" cy="96" r="9" fill="none" stroke="#c9a24a" stroke-width="5"/>${pipeV(80,104,118,6,BR)}${label(122,98,"PIGTAIL",K,7)}`,
+ tank:`${pipeV(80,96,118,8,BR)}<path d="M50 30 Q50 14 80 14 Q110 14 110 30 V80 Q110 98 80 98 Q50 98 50 80 Z" fill="url(#bzTankB)" stroke="${K}" stroke-width="1.2"/><line x1="50" y1="56" x2="110" y2="56" stroke="${K}" stroke-dasharray="3 2"/>${label(80,42,"AIR",WH,9)}${label(80,76,"WATER",WH,9)}<rect x="76" y="6" width="8" height="9" fill="${BR}" stroke="${K}"/>${label(124,12,"AIR VALVE",K,6)}`,
  airsep:`${pipeH(6,54,78,14,BR)}${pipeH(106,154,78,14,BR)}${box(54,44,52,64,BR,12)}${box(70,26,20,20,STL,3)}<circle cx="80" cy="20" r="5" fill="${K}"/>${[0,1,2].map(i=>`<circle cx="${72+i*8}" cy="${10-i*2}" r="2" fill="none" stroke="${WA}"/>`).join("")}${label(80,82,"AIR SEP.",K,7)}${label(30,100,"FLOW →",K,7)}`,
- pump:`${pipeV(38,4,30,14,IR)}${pipeV(38,90,116,14,IR)}<circle cx="38" cy="60" r="28" fill="#c23a2c" stroke="${K}" stroke-width="1.2"/>${box(20,22,36,8,"#c23a2c",2)}${box(20,90,36,8,"#c23a2c",2)}${box(64,40,58,40,"#c23a2c",6)}${box(122,46,18,28,"#a8302a",3)}${box(78,24,30,16,"#c23a2c",3)}${label(93,64,"TACO",WH,10)}${label(38,63,"↑",WH,14)}`,
+ pump:`${pipeV(38,4,30,14,IR)}${pipeV(38,90,116,14,IR)}<circle cx="38" cy="60" r="28" fill="url(#bzRed)" stroke="${K}" stroke-width="1.2"/>${box(20,22,36,8,"url(#bzRed)",2)}${box(20,90,36,8,"url(#bzRed)",2)}${box(64,40,58,40,"url(#bzRed)",6)}${box(122,46,18,28,"url(#bzRed)",3)}${box(78,24,30,16,"url(#bzRed)",3)}${label(93,64,"TACO",WH,10)}${label(38,63,"↑",WH,14)}`,
  fill:`${pipeH(6,48,82,12,BR)}${pipeH(112,154,82,12,BR)}${box(48,64,64,36,BR,8)}<path d="M60 64 Q80 24 100 64" fill="${BR}" stroke="${BRD}" stroke-width="1.2"/>${pipeV(80,14,34,6,BRD)}<rect x="66" y="10" width="28" height="6" rx="2" fill="${BRD}"/>${box(28,92,22,12,BR,2)}${label(80,116,"FILL VALVE",K,7)}`,
  backflow:`${pipeH(6,40,62,14,BR)}${pipeH(120,154,62,14,BR)}${box(40,40,80,44,BR,10)}<line x1="80" y1="40" x2="80" y2="84" stroke="${BRD}"/>${pipeV(80,84,104,10,BR)}${label(80,116,"VENT",K,7)}${label(60,66,"CHECK",K,6)}${label(100,66,"CHECK",K,6)}`,
- baseboard:`${box(10,40,140,52,"#e9e6dd",3)}<rect x="14" y="44" width="132" height="8" fill="#cfcabd"/>${Array.from({length:22},(_,i)=>`<line x1="${18+i*6}" y1="58" x2="${18+i*6}" y2="86" stroke="${ST}" stroke-width="1.4"/>`).join("")}${pipeH(4,156,72,6,"#c87f4f")}${label(80,108,"FIN-TUBE BASEBOARD",K,7)}`,
- tstat:`<circle cx="80" cy="60" r="44" fill="#d9d4c7" stroke="${K}" stroke-width="1.2"/><circle cx="80" cy="60" r="34" fill="#efece4" stroke="${K}" stroke-width=".8"/>${Array.from({length:9},(_,i)=>{const a=(-120+i*30)*Math.PI/180;return `<text x="${80+27*Math.sin(a)}" y="${63-27*Math.cos(a)}" font-size="6" text-anchor="middle" font-family="sans-serif" fill="${K}">${50+i*5}</text>`}).join("")}<polygon points="80,30 76,40 84,40" fill="${RD}"/>${label(80,66,"68",K,12)}`,
- glass:`${box(64,8,32,16,BR,3)}${box(64,96,32,16,BR,3)}<rect x="72" y="24" width="16" height="72" fill="${GL}" stroke="${K}"/><rect x="74" y="56" width="12" height="40" fill="${WA}"/><line x1="66" y1="24" x2="66" y2="96" stroke="${ST}" stroke-width="2"/><line x1="94" y1="24" x2="94" y2="96" stroke="${ST}" stroke-width="2"/>${pipeH(30,64,16,8,BR)}${pipeH(30,64,104,8,BR)}<rect x="96" y="104" width="30" height="5" fill="${RD}" stroke="${K}"/>${label(126,60,"LEVEL",K,7)}`,
+ baseboard:`${box(10,40,140,52,"url(#bzBase)",3)}<rect x="14" y="44" width="132" height="8" fill="#cfcabd"/>${Array.from({length:22},(_,i)=>`<line x1="${18+i*6}" y1="58" x2="${18+i*6}" y2="86" stroke="#9aa3aa" stroke-width="1.4"/>`).join("")}${pipeH(4,156,72,6,"#c87f4f")}${label(80,108,"FIN-TUBE BASEBOARD",K,7)}`,
+ tstat:`<circle cx="80" cy="60" r="44" fill="url(#zTan)" stroke="${K}" stroke-width="1.2"/><circle cx="80" cy="60" r="34" fill="#efece4" stroke="${K}" stroke-width=".8"/>${Array.from({length:9},(_,i)=>{const a=(-120+i*30)*Math.PI/180;return `<text x="${80+27*Math.sin(a)}" y="${63-27*Math.cos(a)}" font-size="6" text-anchor="middle" font-family="sans-serif" fill="${K}">${50+i*5}</text>`}).join("")}<polygon points="80,30 76,40 84,40" fill="${RD}"/>${label(80,66,"68",K,12)}`,
+ glass:`${box(64,8,32,16,BR,3)}${box(64,96,32,16,BR,3)}<rect x="72" y="24" width="16" height="72" fill="${GL}" stroke="${K}"/><rect x="74" y="56" width="12" height="40" fill="${WA}"/><line x1="66" y1="24" x2="66" y2="96" stroke="#9aa3aa" stroke-width="2"/><line x1="94" y1="24" x2="94" y2="96" stroke="#9aa3aa" stroke-width="2"/>${pipeH(30,64,16,8,BR)}${pipeH(30,64,104,8,BR)}<rect x="96" y="104" width="30" height="5" fill="${RD}" stroke="${K}"/>${label(126,60,"LEVEL",K,7)}`,
  trycocks:`${box(50,6,30,108,IR,6)}${[24,60,96].map((y,i)=>`${pipeH(80,108,y,8,BR)}<rect x="108" y="${y-10}" width="6" height="20" rx="2" fill="${BRD}"/>${label(136,y+3,["TOP","MIDDLE","BOTTOM"][i],K,7)}`).join("")}<rect x="54" y="56" width="22" height="54" fill="${WA}" opacity=".6"/>`,
- ptrol:`${box(40,8,80,74,"#8e969d",6)}${box(50,16,60,30,"#d8dcdf",3)}${Array.from({length:9},(_,i)=>`<line x1="${56+i*6}" y1="20" x2="${56+i*6}" y2="${i%2?26:30}" stroke="${K}"/>`).join("")}<polygon points="74,40 80,30 86,40" fill="${RD}"/>${label(80,60,"PRESSURETROL",K,7)}${label(80,72,"MAIN · DIFF",K,6)}${pipeV(80,82,92,6,BR)}<circle cx="80" cy="100" r="7" fill="none" stroke="${BR}" stroke-width="4"/>${pipeV(80,106,118,6,BR)}`,
- hl:`${box(40,8,80,74,"#8e969d",6)}${box(50,16,60,30,"#d8dcdf",3)}${Array.from({length:9},(_,i)=>`<line x1="${56+i*6}" y1="20" x2="${56+i*6}" y2="${i%2?26:30}" stroke="${K}"/>`).join("")}<polygon points="92,40 98,30 104,40" fill="${RD}"/><circle cx="64" cy="64" r="7" fill="${RD}" stroke="${K}"/>${label(96,62,"HIGH LIMIT",K,7)}${label(64,78,"RESET",K,6)}${pipeV(80,82,92,6,BR)}<circle cx="80" cy="100" r="7" fill="none" stroke="${BR}" stroke-width="4"/>${pipeV(80,106,118,6,BR)}`,
- lwco_s:`${box(52,24,40,80,"#2f3337",10)}${box(92,10,46,40,"#3a3f44",4)}${label(115,32,"M&M 67",WH,7)}${pipeH(20,52,34,8,IR)}${pipeH(20,52,92,8,IR)}<circle cx="72" cy="66" r="11" fill="${STL}" stroke="${K}"/><line x1="72" y1="66" x2="100" y2="40" stroke="${STL}" stroke-width="2"/>${pipeV(72,104,114,6,BR)}<rect x="62" y="112" width="20" height="5" fill="${RD}"/>${label(124,116,"BLOWDOWN",K,7)}${label(8,64,"BOILER",K,6)}`,
- lwco2:`${box(40,12,80,60,"#3a3f44",6)}<circle cx="80" cy="40" r="8" fill="${RD}" stroke="${K}"/>${label(80,62,"PROBE LWCO",WH,7)}${hexnut(80,80,11)}${pipeV(80,88,116,5,STL)}${label(118,104,"PROBE",K,7)}`,
- feeder:`${pipeH(6,46,88,12,BR)}${pipeH(114,154,88,12,BR)}${box(46,70,68,36,BR,8)}${box(56,22,48,48,"#3a3f44",6)}${label(80,46,"FEEDER",WH,8)}${label(80,58,"SOLENOID",STL,6)}<path d="M80 22 V10 H140" stroke="${K}" stroke-width="2" fill="none"/>`,
+ ptrol:`${box(40,8,80,74,"url(#zSteelH)",6)}${box(50,16,60,30,"#eef0ee",3)}${Array.from({length:9},(_,i)=>`<line x1="${56+i*6}" y1="20" x2="${56+i*6}" y2="${i%2?26:30}" stroke="${K}"/>`).join("")}<polygon points="74,40 80,30 86,40" fill="${RD}"/>${label(80,60,"PRESSURETROL",K,7)}${label(80,72,"MAIN · DIFF",K,6)}${pipeV(80,82,92,6,BR)}<circle cx="80" cy="100" r="7" fill="none" stroke="#c9a24a" stroke-width="4"/>${pipeV(80,106,118,6,BR)}`,
+ hl:`${box(40,8,80,74,"url(#zSteelH)",6)}${box(50,16,60,30,"#eef0ee",3)}${Array.from({length:9},(_,i)=>`<line x1="${56+i*6}" y1="20" x2="${56+i*6}" y2="${i%2?26:30}" stroke="${K}"/>`).join("")}<polygon points="92,40 98,30 104,40" fill="${RD}"/><circle cx="64" cy="64" r="7" fill="${RD}" stroke="${K}"/>${label(96,62,"HIGH LIMIT",K,7)}${label(64,78,"RESET",K,6)}${pipeV(80,82,92,6,BR)}<circle cx="80" cy="100" r="7" fill="none" stroke="#c9a24a" stroke-width="4"/>${pipeV(80,106,118,6,BR)}`,
+ lwco_s:`${box(52,24,40,80,"url(#zShell)",10)}${box(92,10,46,40,"url(#zPlasticDk)",4)}${label(115,32,"M&M 67",WH,7)}${pipeH(20,52,34,8,IR)}${pipeH(20,52,92,8,IR)}<circle cx="72" cy="66" r="11" fill="${STL}" stroke="${K}"/><line x1="72" y1="66" x2="100" y2="40" stroke="#c4cacf" stroke-width="2"/>${pipeV(72,104,114,6,BR)}<rect x="62" y="112" width="20" height="5" fill="${RD}"/>${label(124,116,"BLOWDOWN",K,7)}${label(8,64,"BOILER",K,6)}`,
+ lwco2:`${box(40,12,80,60,"url(#zPlasticDk)",6)}<circle cx="80" cy="40" r="8" fill="${RD}" stroke="${K}"/>${label(80,62,"PROBE LWCO",WH,7)}${hexnut(80,80,11)}${pipeV(80,88,116,5,STL)}${label(118,104,"PROBE",K,7)}`,
+ feeder:`${pipeH(6,46,88,12,BR)}${pipeH(114,154,88,12,BR)}${box(46,70,68,36,BR,8)}${box(56,22,48,48,"url(#zPlasticDk)",6)}${label(80,46,"FEEDER",WH,8)}${label(80,58,"SOLENOID",STL,6)}<path d="M80 22 V10 H140" stroke="${K}" stroke-width="2" fill="none"/>`,
  sv:`${pipeV(74,96,118,16,BR)}${box(54,52,40,46,BR,8)}<rect x="66" y="22" width="16" height="32" rx="3" fill="${BR}" stroke="${BRD}"/><circle cx="74" cy="14" r="8" fill="none" stroke="${BRD}" stroke-width="3"/>${pipeH(94,140,70,16,BR)}<rect x="40" y="60" width="12" height="18" fill="${WH}" stroke="${K}" stroke-width=".6"/>${label(46,72,"15",K,6)}${label(120,96,"STEAM SAFETY",K,7)}`,
- hartford:`${box(10,40,46,70,"#7b8e9e",4)}<rect x="14" y="62" width="38" height="44" fill="${WA}" opacity=".5"/><line x1="10" y1="62" x2="56" y2="62" stroke="${WA}" stroke-dasharray="3 2"/>${pipeV(30,10,40,8,ST)}${pipeH(30,104,14,8,ST)}${pipeV(100,14,104,8,ST)}${pipeH(56,100,100,8,ST)}${pipeH(104,150,70,8,"#6b8fc9")}${pipeV(150,70,114,8,"#6b8fc9")}<circle cx="104" cy="70" r="5" fill="${RD}"/>${label(124,62,"CLOSE NIPPLE",RD,6)}${label(80,10,"EQUALIZER",K,6)}${label(128,112,"RETURN",K,6)}`,
+ hartford:`${box(10,40,46,70,"url(#bzJacket)",4)}<rect x="14" y="62" width="38" height="44" fill="${WA}" opacity=".5"/><line x1="10" y1="62" x2="56" y2="62" stroke="${WA}" stroke-dasharray="3 2"/>${pipeV(30,10,40,8,ST)}${pipeH(30,104,14,8,ST)}${pipeV(100,14,104,8,ST)}${pipeH(56,100,100,8,ST)}${pipeH(104,150,70,8,"#6b8fc9")}${pipeV(150,70,114,8,"#6b8fc9")}<circle cx="104" cy="70" r="5" fill="${RD}"/>${label(124,62,"CLOSE NIPPLE",RD,6)}${label(80,10,"EQUALIZER",K,6)}${label(128,112,"RETURN",K,6)}`,
  ret:`${pipeH(6,154,70,18,"#6b8fc9")}<rect x="6" y="64" width="148" height="12" fill="${WA}" opacity=".7"/>${label(80,52,"WET RETURN (FULL OF WATER)",K,7)}<path d="M120 70 l-12 -6 v12 z" fill="${WH}"/>${label(80,100,"BELOW THE WATER LINE",K,7)}`,
  mainvent:`${pipeV(80,90,118,12,ST)}${hexnut(80,88,11,STL)}<path d="M62 84 V40 Q62 14 80 14 Q98 14 98 40 V84 Z" fill="${STL}" stroke="${K}" stroke-width="1.2"/><rect x="76" y="6" width="8" height="8" fill="${ST}" stroke="${K}"/>${label(80,52,"MAIN",K,8)}${label(80,64,"VENT",K,8)}`,
- rad:`${Array.from({length:7},(_,i)=>box(20+i*16,24,14,80,"#8a8f86",6)).join("")}${pipeH(20,132,30,6,"#8a8f86")}${pipeH(20,132,98,6,"#8a8f86")}${pipeH(4,20,98,10,ST)}${box(136,30,14,16,STL,3)}<rect x="141" y="22" width="4" height="8" fill="${ST}"/>${label(143,58,"VENT",K,6)}`,
- room:`<path d="M20 60 L80 16 L140 60 V110 H20 Z" fill="#e9e6dd" stroke="${K}" stroke-width="1.2"/>${box(66,74,28,36,"#8a6a4a",2)}${box(34,70,20,18,GL,1)}${box(106,70,20,18,GL,1)}${label(80,52,"68°F",K,10)}`
+ rad:`${Array.from({length:7},(_,i)=>box(20+i*16,24,14,80,"url(#zShell)",6)).join("")}${pipeH(20,132,30,6,"url(#zShell)")}${pipeH(20,132,98,6,"url(#zShell)")}${pipeH(4,20,98,10,ST)}${box(136,30,14,16,STL,3)}<rect x="141" y="22" width="4" height="8" fill="${ST}"/>${label(143,58,"VENT",K,6)}`,
+ room:`<path d="M20 60 L80 16 L140 60 V110 H20 Z" fill="url(#bzBase)" stroke="${K}" stroke-width="1.2"/>${box(66,74,28,36,"#8a6a4a",2)}${box(34,70,20,18,GL,1)}${box(106,70,20,18,GL,1)}${label(80,52,"68°F",K,10)}`
 };
 const ILL_MAP={hyd:{boiler:"boiler_h",lwco:"lwco_h",gauge:"gauge_h"},steam:{boiler:"boiler_s",lwco:"lwco_s",gauge:"gauge_s"}};
 function ill(simId,k){const key=(ILL_MAP[simId]||{})[k]||k;const s=ILL[key];return s?`<svg class="ill" viewBox="0 0 160 120" aria-hidden="true">${s}</svg>`:""}
@@ -370,23 +669,50 @@ function heatIron(sim,qin,wet,dt){const S=sim.S;
   return false}
 const li=(fail,txtF,txtOk)=>`<li class="${fail?"f":"k"}"><b>${fail?"Failed":"Worked"}</b>${fail?txtF:txtOk}</li>`;
 
-/* ============ HOT WATER ============ */
-const HYD={id:"hyd",p:"h_",name:"Hot water",
- svg:`
-    <!-- floor -->
+/* ============ REALISTIC DRAWING HELPERS (shared rz library) ============ */
+// Pipes keep their live temperature color; bzPipes() adds a dark outline and a highlight so they read as round pipe.
+function bzPipes(root){const NS="http://www.w3.org/2000/svg";
+ root.querySelectorAll("path.pipe:not([data-z]):not([pathLength])").forEach(p=>{p.setAttribute("data-z","1");const cs=getComputedStyle(p);const w=parseFloat(p.getAttribute("stroke-width")||cs.strokeWidth)||9,d=p.getAttribute("d");
+  const back=document.createElementNS(NS,"path");back.setAttribute("d",d);back.setAttribute("class","zTubeO");back.setAttribute("stroke-width",w+2.4);back.setAttribute("stroke","#24292c");
+  if(p.id)back.setAttribute("data-follow",p.id);p.parentNode.insertBefore(back,p);
+  const hi=document.createElementNS(NS,"path");hi.setAttribute("d",d);hi.setAttribute("class","zTubeH");hi.setAttribute("stroke-width",Math.max(1,w*.26).toFixed(1));
+  hi.setAttribute("transform",`translate(${(-w*.18).toFixed(1)} ${(-w*.18).toFixed(1)})`);if(p.id)hi.setAttribute("data-follow",p.id);p.parentNode.insertBefore(hi,p.nextSibling)})}
+// outline/highlight copies follow the opacity of pipes that toggle (Hartford loop on/off)
+function bzFollow(root){root.querySelectorAll("[data-follow]").forEach(e=>{const src=document.getElementById(e.dataset.follow);if(src){const o=src.getAttribute("opacity");e.setAttribute("opacity",o==null?1:o)}})}
+const bzJacket=(x,y,w,h,col="url(#bzJacket)")=>`<g filter="url(#zShadow)"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="${col}" stroke="#3f4a52" stroke-width="1.4"/></g><rect x="${x+3}" y="${y+3}" width="${w-6}" height="10" rx="4" fill="rgba(255,255,255,.18)"/>`;
+const bzSections=(x,y,w,h,n)=>{const sw=w/n;return Array.from({length:n},(_,i)=>`<rect x="${(x+i*sw+1).toFixed(1)}" y="${y}" width="${(sw-2).toFixed(1)}" height="${h}" rx="5" fill="url(#bzIron)" stroke="#15181a" stroke-width=".8"/><rect x="${(x+i*sw+3).toFixed(1)}" y="${y+4}" width="2.4" height="${h-8}" rx="1" fill="rgba(255,255,255,.12)"/>`).join("")};
+const bzBox=(x,y,w,h,f="url(#zSteelH)",r=3,st="#4d555a")=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${f}" stroke="${st}" stroke-width="1.2" filter="url(#zShadow)"/>`;
+const bzNut=(x,y,r=5,f="url(#zBrass)")=>`<polygon points="${[0,1,2,3,4,5].map(i=>`${(x+r*Math.cos(i*Math.PI/3)).toFixed(1)},${(y+r*Math.sin(i*Math.PI/3)).toFixed(1)}`).join(" ")}" fill="${f}" stroke="#6a4a12" stroke-width=".7"/>`;
+const bzPig=(x,y1,y2)=>`<rect x="${x-2}" y="${y1-10}" width="4" height="10" fill="url(#zBrass)"/><circle cx="${x}" cy="${y1-16}" r="5.5" fill="none" stroke="#7a5414" stroke-width="5"/><circle cx="${x}" cy="${y1-16}" r="5.5" fill="none" stroke="#c9a24a" stroke-width="3"/><rect x="${x-2}" y="${y2}" width="4" height="${y1-22-y2}" fill="url(#zBrass)"/>`;
+const bzBurner=(x,y,w)=>`<rect x="${x-10}" y="${y-2}" width="${w+20}" height="8" rx="3" fill="url(#zSteelH)" stroke="#3f474c"/>${Array.from({length:Math.floor(w/20)},(_,i)=>`<rect x="${x+4+i*20}" y="${y+4}" width="12" height="10" rx="2" fill="url(#zSteel)" stroke="#3f474c" stroke-width=".7"/>`).join("")}`;
+const bzFlame=(id,dx=0)=>`<g id="${id}" opacity="0"${dx?` transform="translate(${dx},0)"`:""}><path class="flame" d="M150 374 q8 -26 16 0 q8 -30 17 0 q8 -34 17 0 q9 -30 17 0 q8 -26 16 0 q6 -20 12 0 z" fill="url(#zFlame)" filter="url(#zGlow)"/><path class="flame" d="M156 374 q5 -12 10 0 q6 -16 12 0 q6 -18 12 0 q6 -16 12 0 q6 -14 12 0 q5 -10 10 0 z" fill="#3c7bf0" opacity=".85"/></g>`;
+const bzGasValve=(x,y,lampId)=>`${bzBox(x,y,34,28,"url(#zPlasticDk)",4,"#000")}<rect x="${x+8}" y="${y-8}" width="18" height="10" rx="2" fill="url(#zAlu)" stroke="#4d555a"/><circle cx="${x+17}" cy="${y-3}" r="4" fill="#c0281c" stroke="#5a0b07"/><circle id="${lampId}" cx="${x+17}" cy="${y+14}" r="4" fill="var(--lamp-off)" stroke="#000" stroke-width=".6"/>`;
+const bzBrassValve=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.min(w,h)/3}" fill="url(#zBrassH)" stroke="#6a4a12" stroke-width="1" filter="url(#zShadow)"/><rect x="${x+2}" y="${y+2}" width="${w-4}" height="3" rx="1.5" fill="rgba(255,255,255,.35)"/>`;
+const bzVentCap=(cx,y,w=14,h=18)=>`<rect x="${cx-w/2}" y="${y}" width="${w}" height="${h}" rx="3" fill="url(#zSteel)" stroke="#4d555a" filter="url(#zShadow)"/><ellipse cx="${cx}" cy="${y}" rx="${w/2}" ry="2.5" fill="url(#zAluTop)" stroke="#4d555a" stroke-width=".7"/><rect x="${cx-1.5}" y="${y-5}" width="3" height="5" fill="url(#zSteel)"/>`;
+const bzTstatRound=(cx,cy,txtId,lampId)=>`<circle cx="${cx}" cy="${cy}" r="23" fill="url(#zTan)" stroke="#8f887a" stroke-width="1.2" filter="url(#zShadow)"/><circle cx="${cx}" cy="${cy}" r="17" fill="#f3efe6" stroke="#b0a896"/>${Array.from({length:9},(_,i)=>{const a=(-120+i*30)*Math.PI/180;return `<line x1="${(cx+13*Math.sin(a)).toFixed(1)}" y1="${(cy-13*Math.cos(a)).toFixed(1)}" x2="${(cx+16*Math.sin(a)).toFixed(1)}" y2="${(cy-16*Math.cos(a)).toFixed(1)}" stroke="#5b666d" stroke-width=".8"/>`}).join("")}<text class="valD" id="${txtId}" x="${cx}" y="${cy+3}" text-anchor="middle" fill="#1d2327" font-size="12">68</text><circle id="${lampId}" cx="${cx}" cy="${cy+11}" r="2.6" fill="var(--lamp-off)"/>`;
+const bzHop=(x,y,r=8)=>`<path d="M${x} ${y-r} a${r} ${r} 0 0 1 0 ${2*r}" fill="none" stroke="var(--paper)" stroke-width="12"/>`;
+const BZ_DEFS=`<linearGradient id="bzJacket" x1="0" x2="1"><stop offset="0" stop-color="#5f7486"/><stop offset=".18" stop-color="#8ea3b4"/><stop offset=".55" stop-color="#6f8597"/><stop offset="1" stop-color="#4a5b69"/></linearGradient>
+<linearGradient id="bzJacketS" x1="0" x2="1"><stop offset="0" stop-color="#7a3a33"/><stop offset=".18" stop-color="#a95447"/><stop offset=".55" stop-color="#8c4338"/><stop offset="1" stop-color="#5e2a24"/></linearGradient>
+<linearGradient id="bzIron" x1="0" x2="1"><stop offset="0" stop-color="#2c3135"/><stop offset=".35" stop-color="#4b5359"/><stop offset="1" stop-color="#22272a"/></linearGradient>
+<linearGradient id="bzRed" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e0564a"/><stop offset=".45" stop-color="#b8322a"/><stop offset="1" stop-color="#7c1e18"/></linearGradient>
+<linearGradient id="bzTankB" x1="0" x2="1"><stop offset="0" stop-color="#3d6b9a"/><stop offset=".25" stop-color="#77a3cf"/><stop offset=".6" stop-color="#4f7fb0"/><stop offset="1" stop-color="#2e5378"/></linearGradient>
+<linearGradient id="bzBase" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f4f1ea"/><stop offset=".6" stop-color="#e2ddd1"/><stop offset="1" stop-color="#c9c2b2"/></linearGradient>
+<linearGradient id="bzRad" x1="0" x2="1"><stop offset="0" stop-color="rgba(0,0,0,.35)"/><stop offset=".3" stop-color="rgba(255,255,255,.18)"/><stop offset=".7" stop-color="rgba(0,0,0,.05)"/><stop offset="1" stop-color="rgba(0,0,0,.4)"/></linearGradient>
+<pattern id="bzFin" width="5" height="18" patternUnits="userSpaceOnUse"><rect width="5" height="18" fill="#9aa3a9"/><rect x="0" width="1.4" height="18" fill="#d9dee1"/></pattern>`;
+
+const HYD_SVG=`<defs>${BZ_DEFS}</defs>
     <line x1="10" y1="452" x2="790" y2="452" stroke="var(--line)" stroke-dasharray="2 4"/>
-    <!-- room -->
     <g class="part" data-p="room" tabindex="0">
-      <rect class="hl" x="598" y="130" width="182" height="200" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <rect class="hl" x="598" y="130" width="182" height="200" fill="rgba(233,228,214,.25)" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <rect x="690" y="140" width="34" height="26" rx="2" fill="#cfe6f5" stroke="#8a8f86" stroke-width="2" opacity=".8"/><line x1="707" y1="140" x2="707" y2="166" stroke="#8a8f86" stroke-width="1.5"/>
       <text class="lbl" x="606" y="150">Heated room</text>
       <text class="val" id="h_tRoomTxt" x="606" y="168">66.0°F</text>
     </g>
     <text class="lbl" x="700" y="120" text-anchor="end" id="h_outTxt">Outside 25°F</text>
-    <!-- cold water -->
-    <path d="M390 90 V30 H600" class="pipe" stroke="var(--cold)" stroke-width="5"/>
-    <text class="lbl" x="606" y="34">Cold water</text>
+    <!-- flue -->
+    <rect x="138" y="118" width="22" height="62" fill="url(#zSteel)" stroke="#5f686d"/><path d="M138 132 H160 M138 150 H160" stroke="#5f686d" stroke-width=".8"/>
     <!-- relief discharge -->
-    <path d="M272 140 H300 V444" class="pipe" stroke="var(--line)" stroke-width="5"/>
+    <path d="M272 140 H300 V444" class="pipe" stroke="#9aa3a9" stroke-width="5"/>
     <rect x="288" y="446" width="24" height="6" fill="var(--line)"/>
     <text class="lbl" x="318" y="448">Drain</text>
     <g id="h_drip" opacity="0"><circle cx="300" cy="440" r="3" fill="var(--cold)"/><circle cx="300" cy="430" r="2" fill="var(--cold)"/></g>
@@ -396,118 +722,302 @@ const HYD={id:"hyd",p:"h_",name:"Hot water",
     <path id="h_fSup" d="M200 180 V90 H590 V300 H600" class="flow"/>
     <path id="h_fRet" d="M740 300 H760 V420 H160 V400" class="flow"/>
     <path d="M350 105 V150" class="pipe" id="h_pTank"/>
-    <!-- fill valve + backflow -->
-    <g class="part" data-p="fill" tabindex="0">
-      <rect class="hl body" x="408" y="20" width="26" height="20" rx="3"/>
-      <text class="lbl" x="421" y="58" text-anchor="middle">Fill</text>
-      <line id="h_fillX" x1="404" y1="16" x2="438" y2="44" stroke="var(--bad)" stroke-width="3" opacity="0"/>
-    </g>
+    <!-- cold water in: backflow preventer, then fill valve, then a tee into the expansion tank line -->
+    ${bzHop(520,90)}
+    <path d="M612 30 H520 V82 a8 8 0 0 1 0 16 V134 H354" class="pipe" stroke="var(--cold)" stroke-width="5"/>
+    <circle cx="350" cy="134" r="5.5" fill="url(#zBrass)" stroke="#6a4a12"/>
+    <text class="lbl" x="618" y="34">Cold water</text>
     <g class="part" data-p="backflow" tabindex="0">
-      <rect class="hl body" x="468" y="20" width="34" height="20" rx="3"/>
-      <text class="lbl" x="485" y="58" text-anchor="middle">Backflow</text>
+      <rect class="hl" x="508" y="38" width="24" height="36" rx="5" fill="url(#zBrass)" stroke="#6a4a12" stroke-width="1" filter="url(#zShadow)"/>
+      <path d="M508 56 H532" stroke="#6a4a12" stroke-width="1"/>${bzNut(520,38,5)}${bzNut(520,74,5)}
+      <rect x="532" y="50" width="10" height="7" rx="1.5" fill="url(#zBrassH)" stroke="#6a4a12" stroke-width=".7"/>
+      <text class="lbl" x="548" y="60">Backflow</text>
+    </g>
+    <g class="part" data-p="fill" tabindex="0">
+      ${bzBrassValve(378,124,36,20)}<path d="M384 124 Q396 108 408 124" fill="url(#zBrass)" stroke="#6a4a12"/><rect x="393" y="104" width="6" height="8" fill="url(#zBrass)"/><rect x="386" y="100" width="20" height="5" rx="2" fill="#7a5414"/>
+      <rect class="hl" x="376" y="98" width="40" height="48" fill="transparent" stroke="none"/>
+      <text class="lbl" x="396" y="162" text-anchor="middle">Fill</text>
+      <line id="h_fillX" x1="374" y1="100" x2="418" y2="148" stroke="var(--bad)" stroke-width="3" opacity="0"/>
     </g>
     <!-- air separator -->
     <g class="part" data-p="airsep" tabindex="0">
-      <rect class="hl body" x="328" y="72" width="44" height="36" rx="6"/>
-      <rect class="body" x="344" y="56" width="12" height="16" rx="2"/>
-      <g id="h_bubbles" opacity="0"><circle cx="350" cy="48" r="3" fill="none" stroke="var(--cold)"/><circle cx="356" cy="40" r="2" fill="none" stroke="var(--cold)"/><circle cx="345" cy="34" r="2.5" fill="none" stroke="var(--cold)"/></g>
-      <text class="lbl" x="286" y="66">Air sep.</text>
+      <rect class="hl" x="328" y="72" width="44" height="36" rx="10" fill="url(#zBrass)" stroke="#6a4a12" stroke-width="1.2" filter="url(#zShadow)"/>
+      <rect x="332" y="76" width="36" height="5" rx="2" fill="rgba(255,255,255,.3)"/>
+      ${bzVentCap(350,56,14,17)}
+      <g id="h_bubbles" opacity="0"><circle cx="350" cy="44" r="3" fill="none" stroke="var(--cold)"/><circle cx="356" cy="36" r="2" fill="none" stroke="var(--cold)"/><circle cx="345" cy="30" r="2.5" fill="none" stroke="var(--cold)"/></g>
+      <text class="lbl" x="282" y="66">Air sep.</text>
     </g>
-    <!-- expansion tank -->
+    <!-- expansion tank: cutaway window shows the diaphragm -->
     <g class="part" data-p="tank" tabindex="0">
-      <rect class="hl body" x="326" y="150" width="48" height="84" rx="14"/>
-      <clipPath id="h_tankClip"><rect x="327" y="151" width="46" height="82" rx="13"/></clipPath>
-      <rect id="h_tankWater" clip-path="url(#h_tankClip)" x="327" y="151" width="46" height="20" fill="var(--cold)" opacity=".55"/>
-      <line id="h_tankDia" x1="328" x2="372" y1="171" y2="171" stroke="var(--ink)" stroke-width="2"/>
+      <rect class="hl" x="326" y="150" width="48" height="84" rx="16" fill="url(#bzTankB)" stroke="#23405e" stroke-width="1.4" filter="url(#zShadow)"/>
+      <clipPath id="h_tankClip"><rect x="333" y="160" width="34" height="68" rx="8"/></clipPath>
+      <rect x="333" y="160" width="34" height="68" rx="8" fill="#e9eef2" stroke="#23405e" stroke-width=".8"/>
+      <rect id="h_tankWater" clip-path="url(#h_tankClip)" x="327" y="151" width="46" height="20" fill="var(--cold)" opacity=".6"/>
+      <line id="h_tankDia" x1="333" x2="367" y1="171" y2="171" stroke="#1d2327" stroke-width="2.4"/>
+      <rect x="346" y="140" width="8" height="10" fill="url(#zSteel)"/><rect x="346" y="234" width="8" height="5" fill="url(#zBrass)"/>
       <text class="lbl" x="380" y="190">Exp. tank</text>
       <text class="val" id="h_tankTxt" x="380" y="206">air 12 psi</text>
     </g>
-    <!-- circulator -->
+    <!-- circulator: red volute and motor, window shows the impeller -->
     <g class="part" data-p="pump" tabindex="0">
-      <circle class="hl body" cx="450" cy="90" r="19"/>
-      <g id="h_imp"><line x1="450" y1="76" x2="450" y2="104" stroke="var(--ink)" stroke-width="2.5"/><line x1="436" y1="90" x2="464" y2="90" stroke="var(--ink)" stroke-width="2.5"/></g>
-      <text class="lbl" x="450" y="128" text-anchor="middle">Circulator</text>
-      <path d="M476 80 l8 10 -8 10" fill="none" stroke="var(--muted)" stroke-width="2"/>
+      <rect x="428" y="80" width="6" height="20" fill="url(#bzRed)" stroke="#5a1410"/><rect x="466" y="80" width="6" height="20" fill="url(#bzRed)" stroke="#5a1410"/>
+      <circle class="hl" cx="450" cy="90" r="19" fill="url(#bzRed)" stroke="#5a1410" stroke-width="1.2" filter="url(#zShadow)"/>
+      <rect x="436" y="104" width="28" height="22" rx="4" fill="url(#bzRed)" stroke="#5a1410" filter="url(#zShadow)"/><rect x="440" y="108" width="20" height="10" rx="2" fill="#f2f0e9"/><text x="450" y="116" text-anchor="middle" font-family="var(--display)" font-size="7" font-weight="700" fill="#7c1e18">007</text>
+      <circle cx="450" cy="90" r="11" fill="#2a2f33" stroke="#5a1410"/>
+      <g id="h_imp"><line x1="450" y1="80" x2="450" y2="100" stroke="#c4cacf" stroke-width="2.5"/><line x1="440" y1="90" x2="460" y2="90" stroke="#c4cacf" stroke-width="2.5"/></g>
+      <circle cx="450" cy="90" r="2.5" fill="#c4cacf"/>
+      <text class="lbl" x="450" y="62" text-anchor="middle">Circulator</text>
+      <path d="M478 80 l8 10 -8 10" fill="none" stroke="var(--muted)" stroke-width="2"/>
     </g>
-    <!-- baseboard -->
+    <!-- baseboard: enclosure cut open to show the finned tube -->
     <g class="part" data-p="baseboard" tabindex="0">
-      <rect class="hl body" x="600" y="290" width="140" height="22" rx="3"/>
-      <g stroke="var(--muted)" stroke-width="1"><line x1="606" y1="292" x2="606" y2="310"/><line x1="612" y1="292" x2="612" y2="310"/><line x1="618" y1="292" x2="618" y2="310"/><line x1="624" y1="292" x2="624" y2="310"/><line x1="630" y1="292" x2="630" y2="310"/><line x1="636" y1="292" x2="636" y2="310"/><line x1="642" y1="292" x2="642" y2="310"/><line x1="648" y1="292" x2="648" y2="310"/><line x1="654" y1="292" x2="654" y2="310"/><line x1="660" y1="292" x2="660" y2="310"/><line x1="666" y1="292" x2="666" y2="310"/><line x1="672" y1="292" x2="672" y2="310"/><line x1="678" y1="292" x2="678" y2="310"/><line x1="684" y1="292" x2="684" y2="310"/><line x1="690" y1="292" x2="690" y2="310"/><line x1="696" y1="292" x2="696" y2="310"/><line x1="702" y1="292" x2="702" y2="310"/><line x1="708" y1="292" x2="708" y2="310"/><line x1="714" y1="292" x2="714" y2="310"/><line x1="720" y1="292" x2="720" y2="310"/><line x1="726" y1="292" x2="726" y2="310"/><line x1="732" y1="292" x2="732" y2="310"/></g>
-      <text class="lbl" x="600" y="284">Baseboard</text>
+      <rect class="hl" x="600" y="288" width="140" height="26" rx="3" fill="url(#bzBase)" stroke="#9a9384" stroke-width="1.2" filter="url(#zShadow)"/>
+      <rect x="606" y="293" width="128" height="15" fill="url(#bzFin)"/>
+      <rect x="600" y="288" width="140" height="4" fill="#d7d1c3"/><path d="M604 290 h132" stroke="#9a9384" stroke-width=".6" stroke-dasharray="3 2"/>
+      <text class="lbl" x="600" y="282">Baseboard</text>
     </g>
-    <!-- thermostat -->
+    <!-- thermostat (round dial) -->
     <g class="part" data-p="tstat" tabindex="0">
-      <rect class="hl body" x="700" y="170" width="44" height="44" rx="6"/>
-      <text class="val" id="h_tstatTxt" x="722" y="197" text-anchor="middle">68</text>
-      <circle id="h_tstatLamp" cx="722" cy="207" r="3" fill="var(--lamp-off)"/>
-      <text class="lbl" x="722" y="230" text-anchor="middle">Thermostat</text>
+      <rect class="hl" x="699" y="169" width="46" height="46" fill="transparent" stroke="none"/>
+      ${bzTstatRound(722,192,"h_tstatTxt","h_tstatLamp")}
+      <text class="lbl" x="722" y="232" text-anchor="middle">Thermostat</text>
     </g>
-    <!-- boiler -->
+    <!-- boiler: jacket cut away to show the cast-iron sections and the water -->
     <g class="part" data-p="boiler" tabindex="0" id="h_boilerG">
-      <rect class="hl" x="120" y="180" width="160" height="220" rx="6" fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>
+      <rect class="hl" x="120" y="180" width="160" height="220" rx="6" fill="transparent" stroke="none"/>
+      ${bzJacket(120,180,160,220)}
+      <rect x="126" y="186" width="148" height="159" fill="#1b1f22"/>
+      ${bzSections(128,188,144,155,6)}
       <rect id="h_bGlow" x="126" y="186" width="148" height="0" fill="#ff5a1f" opacity="0"/>
-      <rect id="h_bWater" x="126" y="186" width="148" height="159" fill="var(--cold)" opacity=".3"/>
-      <g id="h_bSteam" opacity="0" fill="none" stroke="var(--paper)" stroke-width="1.5"><circle cx="150" cy="300" r="3"/><circle cx="235" cy="320" r="4"/><circle cx="190" cy="335" r="3"/><circle cx="262" cy="290" r="2.5"/></g>
-      <line x1="120" x2="280" y1="218" y2="218" stroke="var(--bad)" stroke-dasharray="3 3" opacity=".7"/>
-      <text x="276" y="214" text-anchor="end" font-family="var(--display)" font-size="9" fill="var(--bad)">LWCO TRIP LEVEL</text>
-      <line x1="120" x2="280" y1="281" y2="281" stroke="var(--warn)" stroke-dasharray="3 3" opacity=".7"/>
-      <text x="276" y="292" text-anchor="end" font-family="var(--display)" font-size="9" fill="var(--warn)">DRY FIRE BELOW</text>
-      <text class="val" id="h_bLvl" x="128" y="358" font-size="10">Water 100%</text>
-      <g stroke="var(--line)" stroke-width="1"><line x1="140" y1="190" x2="140" y2="345"/><line x1="160" y1="190" x2="160" y2="345"/><line x1="180" y1="190" x2="180" y2="345"/><line x1="220" y1="190" x2="220" y2="345"/><line x1="240" y1="190" x2="240" y2="345"/><line x1="260" y1="190" x2="260" y2="345"/></g>
-      <text class="lbl" x="128" y="198">Boiler</text>
+      <rect id="h_bWater" x="126" y="186" width="148" height="159" fill="var(--cold)" opacity=".45"/>
+      <g id="h_bSteam" opacity="0" fill="none" stroke="#fff" stroke-width="1.5"><circle cx="150" cy="300" r="3"/><circle cx="235" cy="320" r="4"/><circle cx="190" cy="335" r="3"/><circle cx="262" cy="290" r="2.5"/></g>
+      <rect x="126" y="345" width="148" height="50" fill="#121517"/>
+      <line x1="120" x2="280" y1="218" y2="218" stroke="#ff6a5a" stroke-dasharray="3 3" opacity=".9"/>
+      <text x="276" y="214" text-anchor="end" font-family="var(--display)" font-size="9" fill="#ffb0a6">LWCO TRIP LEVEL</text>
+      <line x1="120" x2="280" y1="281" y2="281" stroke="#ffc35a" stroke-dasharray="3 3" opacity=".9"/>
+      <text x="276" y="292" text-anchor="end" font-family="var(--display)" font-size="9" fill="#ffd27a">DRY FIRE BELOW</text>
+      <text class="valD" id="h_bLvl" x="128" y="358" font-size="10" fill="#e9ecee">Water 100%</text>
+      <text class="lbl" x="128" y="198" style="fill:#e9ecee">Boiler</text>
     </g>
     <!-- burner -->
     <g class="part" data-p="burner" tabindex="0">
-      <rect class="hl body" x="140" y="374" width="120" height="14" rx="3"/>
-      <g id="h_flameG" opacity="0"><path class="flame" d="M150 374 q8 -26 16 0 q8 -30 17 0 q8 -34 17 0 q9 -30 17 0 q8 -26 16 0 q6 -20 12 0 z" fill="#f08a1c"/><path class="flame" d="M160 374 q6 -14 12 0 q7 -18 14 0 q7 -20 14 0 q7 -18 14 0 q6 -14 12 0 z" fill="#3c7bf0" opacity=".8"/></g>
+      <rect class="hl" x="140" y="374" width="120" height="14" rx="3" fill="transparent" stroke="none"/>
+      ${bzBurner(140,376,120)}
+      ${bzFlame("h_flame")}
       <path id="h_spark" d="M196 372 l6 -8 -4 0 6 -8" stroke="#f5c400" stroke-width="2" fill="none" opacity="0"/>
       <text class="lbl" x="200" y="414" text-anchor="middle">Burner</text>
     </g>
     <!-- gas valve -->
     <g class="part" data-p="gas" tabindex="0">
-      <path d="M20 381 H140" class="pipe" stroke="#c9a227" stroke-width="5"/>
-      <rect class="hl body" x="56" y="368" width="30" height="26" rx="3"/>
-      <circle id="h_gasLamp" cx="71" cy="381" r="4" fill="var(--lamp-off)"/>
-      <text class="lbl" x="71" y="410" text-anchor="middle">Gas valve</text>
+      <path d="M20 381 H130" class="pipe" stroke="#3a3f44" stroke-width="6"/>
+      <rect class="hl" x="54" y="358" width="34" height="38" fill="transparent" stroke="none"/>
+      ${bzGasValve(54,367,"h_gasLamp")}
+      <text class="lbl" x="71" y="414" text-anchor="middle">Gas valve</text>
     </g>
     <!-- tridicator -->
     <g class="part" data-p="gauge" tabindex="0">
-      <circle class="hl" cx="200" cy="246" r="34" fill="var(--paper)" stroke="var(--line)" stroke-width="2"/>
-      <path d="M176 270 A34 34 0 1 1 224 270" fill="none" stroke="var(--line)" stroke-width="1" transform="translate(0,0)"/>
-      <line id="h_needle" x1="200" y1="246" x2="200" y2="226" stroke="var(--bad)" stroke-width="2.5" stroke-linecap="round"/>
-      <circle cx="200" cy="246" r="3" fill="var(--ink)"/>
-      <text class="val" id="h_gPsi" x="200" y="268" text-anchor="middle" font-size="10">12 psi</text>
-      <text class="val" id="h_gTemp" x="200" y="278" text-anchor="middle" font-size="10">150°F</text>
+      <circle class="hl" cx="200" cy="246" r="36" fill="url(#zBrass)" stroke="#6a4a12" stroke-width="1.2" filter="url(#zShadow)"/>
+      <circle cx="200" cy="246" r="31" fill="#fbfbf8" stroke="#8a6a22"/>
+      ${Array.from({length:11},(_,i)=>{const a=(-135+i*27)*Math.PI/180;return `<line x1="${(200+27*Math.sin(a)).toFixed(1)}" y1="${(246-27*Math.cos(a)).toFixed(1)}" x2="${(200+(i%5?24:22)*Math.sin(a)).toFixed(1)}" y2="${(246-(i%5?24:22)*Math.cos(a)).toFixed(1)}" stroke="#1d2327" stroke-width="1"/>`}).join("")}
+      <path d="M181 265 A27 27 0 0 1 219 265" fill="none" stroke="#2f6fd6" stroke-width="2" opacity=".6"/>
+      <line id="h_needle" x1="200" y1="246" x2="200" y2="226" stroke="#c0281c" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="200" cy="246" r="3" fill="#1d2327"/>
+      <text class="valD" id="h_gPsi" x="200" y="263" text-anchor="middle" style="font-size:8px" fill="#1d2327">12 psi</text>
+      <text class="valD" id="h_gTemp" x="200" y="272" text-anchor="middle" style="font-size:8px" fill="#1d2327">150°F</text>
     </g>
     <!-- aquastat + manual high limit -->
     <g class="part" data-p="aquastat" tabindex="0">
-      <rect class="hl" x="146" y="300" width="50" height="34" rx="3" fill="var(--plate)"/>
-      <text x="171" y="315" text-anchor="middle" font-family="var(--display)" font-size="10" fill="var(--plate-ink)">AQUASTAT</text>
-      <circle id="h_aqLamp" cx="171" cy="325" r="4" fill="var(--lamp-off)"/>
+      <rect class="hl" x="146" y="300" width="50" height="34" rx="3" fill="url(#zSteelH)" stroke="#4d555a" stroke-width="1.2" filter="url(#zShadow)"/>
+      <rect x="150" y="304" width="42" height="12" rx="2" fill="#2a2f33"/>
+      <text x="171" y="313" text-anchor="middle" font-family="var(--display)" font-size="8" fill="#e9ecee">AQUASTAT</text>
+      <circle id="h_aqLamp" cx="171" cy="325" r="4" fill="var(--lamp-off)" stroke="#000" stroke-width=".6"/>
     </g>
     <g class="part" data-p="mrhl" tabindex="0">
-      <rect class="hl" x="204" y="300" width="50" height="34" rx="3" fill="var(--plate)"/>
-      <text x="229" y="315" text-anchor="middle" font-family="var(--display)" font-size="10" fill="var(--plate-ink)">HI LIMIT</text>
-      <circle id="h_mrLamp" cx="229" cy="325" r="4" fill="var(--lamp-off)"/>
+      <rect class="hl" x="204" y="300" width="50" height="34" rx="3" fill="url(#zSteelH)" stroke="#4d555a" stroke-width="1.2" filter="url(#zShadow)"/>
+      <rect x="208" y="304" width="42" height="12" rx="2" fill="#2a2f33"/>
+      <text x="229" y="313" text-anchor="middle" font-family="var(--display)" font-size="8" fill="#e9ecee">HI LIMIT</text>
+      <circle cx="244" cy="325" r="4" fill="#c0281c" stroke="#5a0b07"/>
+      <circle id="h_mrLamp" cx="222" cy="325" r="4" fill="var(--lamp-off)" stroke="#000" stroke-width=".6"/>
     </g>
     <!-- LWCO -->
     <g class="part" data-p="lwco" tabindex="0">
-      <rect class="hl body" x="86" y="256" width="34" height="30" rx="3"/>
-      <circle id="h_lwLamp" cx="103" cy="271" r="4" fill="var(--lamp-off)"/>
-      <text class="lbl" x="103" y="302" text-anchor="middle">LWCO</text>
+      <rect x="114" y="266" width="8" height="10" fill="url(#zBrass)"/>
+      <rect class="hl" x="86" y="256" width="30" height="30" rx="3" fill="url(#zPlasticDk)" stroke="#000" stroke-width="1.2" filter="url(#zShadow)"/>
+      <circle id="h_lwLamp" cx="101" cy="267" r="4" fill="var(--lamp-off)" stroke="#000" stroke-width=".6"/>
+      <circle cx="94" cy="279" r="2.6" fill="#c0281c"/><circle cx="108" cy="279" r="2.6" fill="#c4cacf"/>
+      <text class="lbl" x="101" y="302" text-anchor="middle">LWCO</text>
     </g>
     <!-- relief valve -->
     <g class="part" data-p="relief" tabindex="0">
-      <path d="M260 180 V150" class="pipe" stroke="var(--line)" stroke-width="7"/>
-      <rect class="hl body" x="248" y="128" width="24" height="24" rx="3"/>
-      <rect id="h_reliefLever" x="254" y="118" width="12" height="10" fill="var(--brass)"/>
+      <rect x="256" y="152" width="8" height="28" fill="url(#zBrass)" stroke="#6a4a12" stroke-width=".7"/>
+      <rect class="hl" x="248" y="128" width="24" height="26" rx="6" fill="url(#zBrass)" stroke="#6a4a12" stroke-width="1.2" filter="url(#zShadow)"/>
+      <rect x="252" y="131" width="16" height="4" rx="2" fill="rgba(255,255,255,.35)"/>
+      <rect id="h_reliefLever" x="254" y="118" width="12" height="10" rx="2" fill="url(#zBrassH)" stroke="#6a4a12" stroke-width=".7"/>
       <text class="lbl" x="214" y="124">Relief</text>
     </g>
     <g id="h_wreck" opacity="0">
-      <g fill="var(--line)" stroke="var(--ink)" stroke-width="1"><polygon points="118,200 160,186 150,240 112,250"/><polygon points="230,170 288,190 276,232 240,214"/><polygon points="96,330 140,318 132,372 90,360"/><polygon points="250,330 300,316 306,368 262,380"/><polygon points="176,150 208,140 214,168 182,176"/></g>
+      <g fill="url(#bzIron)" stroke="#111" stroke-width="1"><polygon points="118,200 160,186 150,240 112,250"/><polygon points="230,170 288,190 276,232 240,214"/><polygon points="96,330 140,318 132,372 90,360"/><polygon points="250,330 300,316 306,368 262,380"/><polygon points="176,150 208,140 214,168 182,176"/></g>
       <g fill="var(--paper)" opacity=".85"><circle cx="200" cy="270" r="70"/><circle cx="150" cy="220" r="48"/><circle cx="255" cy="225" r="52"/><circle cx="200" cy="175" r="44"/><circle cx="140" cy="320" r="40"/><circle cx="265" cy="320" r="44"/></g>
     </g>
-  `,
+  `;
+
+const STEAM_SVG=`<defs>${BZ_DEFS}</defs><line x1="10" y1="452" x2="790" y2="452" stroke="var(--line)" stroke-dasharray="2 4"/>
+<g class="part" data-p="room" tabindex="0"><rect class="hl" x="450" y="140" width="335" height="232" fill="rgba(233,228,214,.25)" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="6 4"/><text class="lbl" x="636" y="160">Heated room</text><text class="val" id="s_room" x="636" y="178">66.0°F</text></g>
+<text class="lbl" id="s_outTxt" x="750" y="132" text-anchor="end">Outside 25°F</text>
+<path d="M308 128 H338 V444" class="pipe" stroke="#9aa3a9" stroke-width="5"/>
+<rect x="326" y="446" width="24" height="6" fill="var(--line)"/>
+<g id="s_svPuff" opacity="0" fill="var(--paper)" stroke="var(--line)"><circle cx="338" cy="436" r="6"/><circle cx="328" cy="428" r="4"/><circle cx="348" cy="426" r="5"/></g>
+<g class="part" data-p="ret" tabindex="0">
+  <path id="s_retA" d="M760 92 V436 H405 V299 H370" class="pipe" stroke="#6b8fc9"/>
+  <path id="s_retB" d="M760 92 V436 H405 V392 H370" class="pipe" stroke="#6b8fc9" opacity="0"/>
+  <path id="s_fRet" d="M760 92 V436 H405 V299 H370" class="flow"/>
+  <text class="lbl" x="560" y="428">Wet return</text>
+  <g id="s_leak" opacity="0"><circle cx="600" cy="446" r="3" fill="var(--cold)"/><circle cx="612" cy="448" r="2" fill="var(--cold)"/><circle cx="590" cy="448" r="2.5" fill="var(--cold)"/><text class="tag" x="600" y="462" text-anchor="middle" fill="var(--bad)">BROKEN</text></g>
+</g>
+<rect x="164" y="128" width="22" height="42" fill="url(#zSteel)" stroke="#5f686d"/>
+<path id="s_header" d="M190 170 V80 H370 V392 H310" class="pipe" stroke="var(--line)"/>
+<path d="M370 80 L760 92" class="pipe" stroke="var(--line)"/>
+<path id="s_mainSteam" d="M370 80 L760 92" class="pipe" pathLength="100" stroke-dasharray="0 100" style="stroke-linecap:butt"/>
+<text class="lbl" x="520" y="74">Steam main</text>
+<text class="lbl" x="200" y="74">Header</text>
+<g class="part" data-p="hartford" tabindex="0">
+  <rect class="hl" x="352" y="270" width="64" height="134" rx="6" fill="transparent" stroke="none"/>
+  <circle cx="370" cy="299" r="6" fill="url(#zSteel)" stroke="#3f474c"/>
+  <text class="lbl" x="378" y="252">Equalizer /</text>
+  <text class="lbl" x="378" y="266">Hartford loop</text>
+  <text class="tag" x="380" y="284" fill="var(--muted)">CLOSE NIPPLE ↓</text>
+</g>
+<g class="part" data-p="mainvent" tabindex="0">
+  <path d="M748 92 V76" class="pipe" stroke="#9aa3a9" stroke-width="5"/>
+  <rect class="hl" x="738" y="52" width="20" height="26" rx="5" fill="url(#zSteel)" stroke="#4d555a" stroke-width="1.2" filter="url(#zShadow)"/>
+  <ellipse cx="748" cy="52" rx="10" ry="3" fill="url(#zAluTop)" stroke="#4d555a" stroke-width=".7"/><rect x="745" y="45" width="6" height="7" fill="url(#zSteel)"/>
+  <g id="s_ventPuff" opacity="0" fill="none" stroke="var(--muted)"><circle cx="748" cy="38" r="4"/><circle cx="756" cy="28" r="3"/></g>
+  <text class="lbl" x="732" y="50" text-anchor="end">Main vent</text>
+</g>
+<g class="part" data-p="rad" tabindex="0">
+  <path d="M480 83 V342 H492" class="pipe" stroke="#9aa3a9" stroke-width="7"/>
+  <path d="M628 87 V342 H640" class="pipe" stroke="#9aa3a9" stroke-width="7"/>
+  <rect class="hl" id="s_rad1" x="492" y="280" width="74" height="68" rx="5" fill="var(--panel)" stroke="#5a5f57" stroke-width="1.5" filter="url(#zShadow)"/>
+  <rect class="hl" id="s_rad2" x="640" y="280" width="74" height="68" rx="5" fill="var(--panel)" stroke="#5a5f57" stroke-width="1.5" filter="url(#zShadow)"/>
+  ${[492,640].map(x0=>Array.from({length:6},(_,i)=>`<rect x="${x0+2+i*12}" y="282" width="10" height="64" rx="5" fill="url(#bzRad)" stroke="rgba(0,0,0,.35)" stroke-width=".7"/>`).join("")+`<rect x="${x0+4}" y="348" width="6" height="8" fill="#5a5f57"/><rect x="${x0+64}" y="348" width="6" height="8" fill="#5a5f57"/>`).join("")}
+  ${bzVentCap(567,270,10,13)}${bzVentCap(715,270,10,13)}
+  <text class="lbl" x="492" y="272">Radiator</text>
+</g>
+<g class="part" data-p="tstat" tabindex="0">
+  <rect class="hl" x="725" y="172" width="44" height="44" fill="transparent" stroke="none"/>
+  ${bzTstatRound(747,194,"s_tstatTxt","s_tstatLamp")}
+  <text class="lbl" x="747" y="232" text-anchor="middle">Thermostat</text>
+</g>
+<g class="part" data-p="lwco" tabindex="0">
+  <path d="M94 236 H150 M94 336 H150" class="pipe" stroke="#3a3f44" stroke-width="5"/>
+  <rect class="hl" x="60" y="226" width="34" height="122" rx="12" fill="url(#zShell)" stroke="#111" stroke-width="1.2" filter="url(#zShadow)"/>
+  <rect x="64" y="236" width="26" height="104" rx="8" fill="#e9eef2" opacity=".9"/>
+  <circle id="s_float" cx="77" cy="249" r="9" fill="url(#zAluTop)" stroke="#3f474c" stroke-width="1.2"/>
+  <rect x="58" y="200" width="38" height="26" rx="3" fill="url(#zPlasticDk)" stroke="#000"/><text x="77" y="223" text-anchor="middle" font-family="var(--display)" font-size="7" fill="#c4cacf">M&amp;M 67</text>
+  <rect x="74.5" y="348" width="5" height="16" fill="url(#zBrass)"/><rect x="68" y="362" width="18" height="5" rx="1" fill="#c0281c"/>
+  <g id="s_blowJet" opacity="0"><circle cx="77" cy="374" r="3" fill="var(--cold)"/><circle cx="72" cy="384" r="2" fill="var(--cold)"/><circle cx="82" cy="388" r="2.5" fill="var(--cold)"/></g>
+  <text class="lbl" x="56" y="300" text-anchor="end">LWCO</text>
+  <circle id="s_lw1Lamp" cx="77" cy="210" r="5" fill="var(--ok)" stroke="#000" stroke-width=".6"/>
+</g>
+<!-- feeder: piped into the wet return, below the Hartford loop's close nipple -->
+<g class="part" data-p="feeder" tabindex="0">
+  ${bzHop(430,436)}
+  <path d="M430 386 V428 a8 8 0 0 1 0 16 V447 H476" class="pipe" stroke="var(--cold)" stroke-width="4"/>
+  <text class="tag" x="480" y="450" fill="var(--muted)">COLD WATER</text>
+  <path d="M414 374 H409" class="pipe" stroke="var(--cold)" stroke-width="4"/>
+  <rect class="hl" x="414" y="360" width="34" height="28" rx="4" fill="url(#zBrassH)" stroke="#6a4a12" stroke-width="1.2" filter="url(#zShadow)"/>
+  <rect x="420" y="340" width="22" height="20" rx="3" fill="url(#zPlasticDk)" stroke="#000"/>
+  <circle id="s_feedLamp" cx="431" cy="350" r="4.5" fill="var(--lamp-off)" stroke="#000" stroke-width=".6"/>
+  <line id="s_feedX" x1="410" y1="338" x2="452" y2="392" stroke="var(--bad)" stroke-width="3" opacity="0"/>
+  <text class="lbl" x="452" y="398">Feeder</text>
+</g>
+<g class="part" data-p="boiler" tabindex="0" id="s_boilerG">
+  <rect class="hl" x="150" y="170" width="160" height="230" rx="6" fill="transparent" stroke="none"/>
+  ${bzJacket(150,170,160,230,"url(#bzJacketS)")}
+  <rect x="156" y="176" width="148" height="184" fill="#1b1f22"/>
+  ${bzSections(158,178,144,180,6)}
+  <rect id="s_glow" x="156" y="176" width="148" height="0" fill="#ff5a1f" opacity="0"/>
+  <rect id="s_water" x="156" y="250" width="148" height="110" fill="var(--cold)" opacity=".5"/>
+  <g id="s_bub" opacity="0" fill="none" stroke="#fff" stroke-width="1.5"><circle cx="180" cy="330" r="3"/><circle cx="240" cy="345" r="4"/><circle cx="215" cy="310" r="3"/><circle cx="280" cy="325" r="2.5"/><circle cx="200" cy="290" r="2"/></g>
+  <rect x="156" y="360" width="148" height="34" fill="#121517"/>
+  <line x1="150" x2="310" y1="249.6" y2="249.6" stroke="#8fc3ff" stroke-dasharray="4 3"/>
+  <text x="304" y="246" text-anchor="end" class="tag" fill="#8fc3ff">NORMAL WATER LINE</text>
+  <line x1="150" x2="310" y1="277" y2="277" stroke="#ff6a5a" stroke-dasharray="3 3" opacity=".9"/>
+  <text x="304" y="273" text-anchor="end" class="tag" fill="#ffb0a6">LWCO CUTOFF</text>
+  <line x1="150" x2="310" y1="314" y2="314" stroke="#ffc35a" stroke-dasharray="3 3" opacity=".9"/>
+  <text x="304" y="326" text-anchor="end" class="tag" fill="#ffd27a">CROWN SHEET</text>
+  <text class="lbl" x="158" y="190" style="fill:#e9ecee">Boiler</text>
+  <text class="valD" id="s_lvl" x="158" y="206" font-size="11" fill="#e9ecee">Water 60% full</text>
+</g>
+<g class="part" data-p="glass" tabindex="0">
+  <rect x="126" y="201.5" width="24" height="5" fill="url(#zBrassH)"/><rect x="126" y="311.5" width="24" height="5" fill="url(#zBrassH)"/>
+  ${bzNut(122,204,6)}${bzNut(122,314,6)}
+  <rect class="hl" x="117" y="208" width="10" height="102" rx="3" fill="rgba(220,238,250,.9)" stroke="#5f686d" stroke-width="1.2"/>
+  <rect id="s_glassW" x="118" y="250" width="8" height="64" fill="var(--cold)" opacity=".75"/>
+  <rect x="119" y="210" width="2" height="98" fill="rgba(255,255,255,.7)"/>
+</g>
+<g class="part" data-p="lwco2" tabindex="0">
+  <rect class="hl" x="310" y="285" width="18" height="12" rx="2" fill="url(#zPlasticDk)" stroke="#000" stroke-width="1"/>
+  <circle id="s_lw2Lamp" cx="319" cy="291" r="3" fill="var(--ok)"/>
+</g>
+<g class="part" data-p="trycocks" tabindex="0">
+  <rect class="hl" x="308" y="214" width="28" height="70" fill="transparent" stroke="none"/>
+  <rect x="310" y="220" width="12" height="4" fill="url(#zBrassH)"/><rect x="310" y="248" width="12" height="4" fill="url(#zBrassH)"/><rect x="310" y="275" width="12" height="4" fill="url(#zBrassH)"/>
+  <rect x="321" y="217" width="5" height="10" rx="1" fill="#7a5414"/><rect x="321" y="245" width="5" height="10" rx="1" fill="#7a5414"/><rect x="321" y="272" width="5" height="10" rx="1" fill="#7a5414"/>
+  <circle id="s_puff" cx="334" cy="250" r="6" opacity="0" fill="var(--paper)" stroke="var(--line)"/>
+</g>
+<g class="part" data-p="burner" tabindex="0">
+  <rect class="hl" x="170" y="374" width="120" height="14" rx="3" fill="transparent" stroke="none"/>
+  ${bzBurner(170,376,120)}
+  ${bzFlame("s_flame",30)}
+  <path id="s_spark" d="M226 372 l6 -8 -4 0 6 -8" stroke="#f5c400" stroke-width="2" fill="none" opacity="0"/>
+  <text class="lbl" x="230" y="416" text-anchor="middle">Burner</text>
+</g>
+<g class="part" data-p="gas" tabindex="0">
+  <path d="M20 400 H120 V381 H160" class="pipe" stroke="#3a3f44" stroke-width="6"/>
+  <rect class="hl" x="34" y="378" width="34" height="38" fill="transparent" stroke="none"/>
+  ${bzGasValve(34,386,"s_gasLamp")}
+  <text class="lbl" x="51" y="430" text-anchor="middle">Gas valve</text>
+</g>
+<g class="part" data-p="hl" tabindex="0">
+  ${bzPig(165,170,130)}
+  <rect class="hl" x="148" y="104" width="34" height="26" rx="3" fill="url(#zSteelH)" stroke="#4d555a" stroke-width="1.2" filter="url(#zShadow)"/>
+  <rect x="151" y="107" width="28" height="10" rx="1.5" fill="#2a2f33"/>
+  <text x="165" y="115" text-anchor="middle" font-family="var(--display)" font-size="7" fill="#e9ecee">HI LIMIT</text>
+  <circle id="s_hlLamp" cx="159" cy="123" r="3.5" fill="var(--ok)" stroke="#000" stroke-width=".5"/><circle cx="173" cy="123" r="3" fill="#c0281c"/>
+</g>
+<g class="part" data-p="ptrol" tabindex="0">
+  ${bzPig(225,170,130)}
+  <rect class="hl" x="207" y="104" width="36" height="26" rx="3" fill="url(#zSteelH)" stroke="#4d555a" stroke-width="1.2" filter="url(#zShadow)"/>
+  <rect x="210" y="107" width="30" height="10" rx="1.5" fill="#2a2f33"/>
+  <text x="225" y="115" text-anchor="middle" font-family="var(--display)" font-size="7" fill="#e9ecee">P-TROL</text>
+  <circle id="s_ptLamp" cx="225" cy="123" r="3.5" fill="var(--ok)" stroke="#000" stroke-width=".5"/>
+</g>
+<g class="part" data-p="gauge" tabindex="0">
+  ${bzPig(262,170,126)}
+  <circle class="hl" cx="262" cy="108" r="19" fill="url(#zSteel)" stroke="#3f474c" stroke-width="1.2" filter="url(#zShadow)"/>
+  <circle cx="262" cy="108" r="15" fill="#fbfbf8" stroke="#8a8f86"/>
+  ${Array.from({length:7},(_,i)=>{const a=(-135+i*45)*Math.PI/180;return `<line x1="${(262+12*Math.sin(a)).toFixed(1)}" y1="${(108-12*Math.cos(a)).toFixed(1)}" x2="${(262+14*Math.sin(a)).toFixed(1)}" y2="${(108-14*Math.cos(a)).toFixed(1)}" stroke="#1d2327" stroke-width=".9"/>`}).join("")}
+  <line id="s_needle" x1="262" y1="108" x2="262" y2="96" stroke="#c0281c" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="262" cy="108" r="2" fill="#1d2327"/>
+  <text class="val" id="s_gP" x="286" y="97" font-size="10">0.0 psi</text>
+</g>
+<g class="part" data-p="sv" tabindex="0">
+  <rect x="294" y="146" width="8" height="24" fill="url(#zBrass)" stroke="#6a4a12" stroke-width=".7"/>
+  <rect class="hl" x="288" y="122" width="20" height="26" rx="5" fill="url(#zBrass)" stroke="#6a4a12" stroke-width="1.2" filter="url(#zShadow)"/>
+  <rect x="291" y="125" width="14" height="4" rx="2" fill="rgba(255,255,255,.35)"/>
+  <rect id="s_svLever" x="293" y="116" width="10" height="6" rx="1.5" fill="url(#zBrassH)" stroke="#6a4a12" stroke-width=".6"/>
+  <text class="lbl" x="312" y="112">Safety</text>
+</g>
+<g id="s_wreck" opacity="0">
+  <g fill="url(#bzIron)" stroke="#111" stroke-width="1"><polygon points="148,200 190,186 180,240 142,250"/><polygon points="260,170 318,190 306,232 270,214"/><polygon points="126,330 170,318 162,372 120,360"/><polygon points="280,330 330,316 336,368 292,380"/><polygon points="206,150 238,140 244,168 212,176"/></g>
+  <g fill="var(--paper)" opacity=".85"><circle cx="230" cy="270" r="70"/><circle cx="180" cy="220" r="48"/><circle cx="285" cy="225" r="52"/><circle cx="230" cy="175" r="44"/><circle cx="170" cy="320" r="40"/><circle cx="295" cy="320" r="44"/></g>
+</g>
+`;
+
+/* ============ HOT WATER ============ */
+const HYD={id:"hyd",p:"h_",name:"Hot water",
+ svg:HYD_SVG,
  consts:{QB:22.8,CB:250,UAE:0.083,UAB:0.12,CR:900,VS:20,VT:4.4,RUPTURE:200},
  sliders:[
   {k:"tstat",l:"Thermostat",u:"°F",min:40,max:95,step:1,v:68,n:[60,75],note:"Normal 60–75°F"},
@@ -534,8 +1044,8 @@ const HYD={id:"hyd",p:"h_",name:"Hot water",
   gauge:{n:"Tridicator gauge",s:"Pressure, altitude and temperature in one gauge.",w:"Shows system pressure in psi, altitude in feet of water (1 psi = 2.31 ft) and boiler water temperature.",y:"Your window into the system: cold fill pressure, how much pressure rises when hot, and how close you are to the relief setting.",f:"A pressure swing toward 30 psi on each firing cycle points at the expansion tank.",src:["oep"],faults:[]},
   tank:{n:"Expansion tank",s:"Air cushion that absorbs the water's expansion.",w:"A diaphragm tank with an air charge on one side. Water expands about 3 to 4% from 50 to 180°F; it pushes into the tank and compresses the air.",y:"Precharge should match the cold fill pressure (typically 12 psi), set before the tank sees water. The tank connection is the point of no pressure change.",f:"Waterlogged (lost its air charge): pressure spikes, often from 12 to 30 psi each firing cycle, and the relief valve lifts.",src:["oep"],faults:["waterlog"]},
   airsep:{n:"Air separator and vent",s:"Pulls air out of the water.",w:"Pulls air bubbles out of the water and lets them out through the automatic vent on top.",y:"Installed on the boiler supply, where the water is hottest and pressure lowest, ahead of the pump.",f:"Air in the system means noise, poor flow and cold radiation. A stuck vent lets air build up.",src:["oep"],faults:["air"]},
-  pump:{n:"Circulator",s:"Moves the water around the loop.",w:"Pushes water around the loop. Here it pumps away from the expansion tank.",y:"The tank connection is the point of no pressure change, so pumping away from it adds pump head to the system pressure (12 psi fill plus 6 psi head gives 18 psi). Pumping toward it can drop suction pressure and pull in air.",f:"If it stops, heat stays in the boiler: the boiler cycles on its high limit while the room gets cold.",src:["oep","l8148"],faults:["pumpFail"]},
-  fill:{n:"Fill valve",s:"Adds city water to hold fill pressure.",w:"A pressure-reducing valve. It lowers city water pressure and adds water whenever system pressure drops below its setting.",y:"Fill pressure = system height × 0.433 psi per foot, plus 4 to 5 psi at the top. A typical house is about 12 psi.",f:"Stuck open or set too high: pressure creeps up until the relief valve lifts. Failed shut: nothing replaces water lost to a leak.",src:["oep"],faults:["fillStuck","fillFail"]},
+  pump:{n:"Circulator",s:"Moves the water around the loop.",w:"Pushes water around the loop. Here it pumps away from the expansion tank.",y:"The tank connection is the point of no pressure change, so pumping away from it adds pump head to the system pressure (12 psi fill plus 6 psi head gives 18 psi). Pumping toward it can drop suction pressure and pull in air.",f:"If it stops, heat stays in the boiler: the boiler cycles on its high limit while the room gets cold. Note: many packaged boilers ship with the circulator on the return, pumping into the boiler. With a small low-head circulator and correct fill pressure that works in most houses; pumping away from the tank is still the preferred layout, especially on taller or larger systems.",src:["oep","l8148"],faults:["pumpFail"]},
+  fill:{n:"Fill valve",s:"Adds city water to hold fill pressure.",w:"A pressure-reducing valve. It lowers city water pressure and adds water whenever system pressure drops below its setting. Piping order: city water, backflow preventer, fill valve, then a tee into the expansion tank line under the air separator. That's the point of no pressure change, so the fill valve holds the pressure there.",y:"Fill pressure = system height × 0.433 psi per foot, plus 4 to 5 psi at the top. A typical house is about 12 psi.",f:"Stuck open or set too high: pressure creeps up until the relief valve lifts. Failed shut: nothing replaces water lost to a leak.",src:["oep"],faults:["fillStuck","fillFail"]},
   backflow:{n:"Backflow preventer",s:"Keeps boiler water out of the drinking water.",w:"Keeps boiler water from flowing back into the drinking water.",y:"Residential systems with no chemicals use an ASSE 1012 dual check. Glycol or commercial systems need a reduced pressure zone (RPZ) assembly, ASSE 1013.",f:"",src:["oep"],faults:[]},
   baseboard:{n:"Baseboard",s:"Finned tube that heats the room.",w:"Finned tube that passes heat from the water to the room air.",y:"Heat output depends on water temperature and flow. Less flow, cooler water or air in the tube means less heat.",f:"",src:["oep"],faults:["air"]},
   tstat:TSTAT, room:ROOM},
@@ -656,140 +1166,7 @@ const HYD={id:"hyd",p:"h_",name:"Hot water",
 /* ============ STEAM ============ */
 const lvY=L=>360-184*L; // boiler water height to drawing y
 const STEAM={id:"steam",p:"s_",name:"Steam",
- svg:`<line x1="10" y1="452" x2="790" y2="452" stroke="var(--line)" stroke-dasharray="2 4"/>
-<g class="part" data-p="room" tabindex="0"><rect class="hl" x="450" y="140" width="335" height="232" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="6 4"/><text class="lbl" x="636" y="160">Heated room</text><text class="val" id="s_room" x="636" y="178">66.0°F</text></g>
-<text class="lbl" id="s_outTxt" x="750" y="132" text-anchor="end">Outside 25°F</text>
-<path d="M77 150 V30 H20" class="pipe" stroke="var(--cold)" stroke-width="5"/>
-<text class="lbl" x="86" y="34">Cold water</text>
-<path d="M308 128 H338 V444" class="pipe" stroke="var(--line)" stroke-width="5"/>
-<rect x="326" y="446" width="24" height="6" fill="var(--line)"/>
-<g id="s_svPuff" opacity="0" fill="var(--paper)" stroke="var(--line)"><circle cx="338" cy="436" r="6"/><circle cx="328" cy="428" r="4"/><circle cx="348" cy="426" r="5"/></g>
-<g class="part" data-p="ret" tabindex="0">
-  <path id="s_retA" d="M760 92 V436 H405 V299 H370" class="pipe" stroke="#6b8fc9"/>
-  <path id="s_retB" d="M760 92 V436 H405 V392 H370" class="pipe" stroke="#6b8fc9" opacity="0"/>
-  <path id="s_fRet" d="M760 92 V436 H405 V299 H370" class="flow"/>
-  <text class="lbl" x="560" y="428">Wet return</text>
-  <g id="s_leak" opacity="0"><circle cx="600" cy="446" r="3" fill="var(--cold)"/><circle cx="612" cy="448" r="2" fill="var(--cold)"/><circle cx="590" cy="448" r="2.5" fill="var(--cold)"/><text class="tag" x="600" y="462" text-anchor="middle" fill="var(--bad)">BROKEN</text></g>
-</g>
-<path id="s_header" d="M190 170 V80 H370 V392 H310" class="pipe" stroke="var(--line)"/>
-<path d="M370 80 L760 92" class="pipe" stroke="var(--line)"/>
-<path id="s_mainSteam" d="M370 80 L760 92" class="pipe" pathLength="100" stroke-dasharray="0 100" style="stroke-linecap:butt"/>
-<text class="lbl" x="520" y="74">Steam main</text>
-<text class="lbl" x="200" y="74">Header</text>
-<g class="part" data-p="hartford" tabindex="0">
-  <rect class="hl" x="352" y="270" width="64" height="134" rx="6" fill="transparent" stroke="none"/>
-  <text class="lbl" x="378" y="266">Equalizer /</text>
-  <text class="lbl" x="420" y="296">Hartford</text>
-  <text class="lbl" x="420" y="310">loop</text>
-</g>
-<g class="part" data-p="mainvent" tabindex="0">
-  <path d="M748 92 V74" class="pipe" stroke="var(--line)" stroke-width="5"/>
-  <rect class="hl body" x="738" y="52" width="20" height="24" rx="4"/>
-  <g id="s_ventPuff" opacity="0" fill="none" stroke="var(--muted)"><circle cx="748" cy="42" r="4"/><circle cx="756" cy="32" r="3"/></g>
-  <text class="lbl" x="732" y="50" text-anchor="end">Main vent</text>
-</g>
-<g class="part" data-p="rad" tabindex="0">
-  <path d="M480 83 V342 H492" class="pipe" stroke="var(--line)" stroke-width="7"/>
-  <path d="M628 87 V342 H640" class="pipe" stroke="var(--line)" stroke-width="7"/>
-  <rect class="hl" id="s_rad1" x="492" y="280" width="74" height="68" rx="5" fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>
-  <rect class="hl" id="s_rad2" x="640" y="280" width="74" height="68" rx="5" fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>
-  <g stroke="var(--line)" stroke-width="1"><line x1="504" y1="284" x2="504" y2="344"/><line x1="516" y1="284" x2="516" y2="344"/><line x1="528" y1="284" x2="528" y2="344"/><line x1="540" y1="284" x2="540" y2="344"/><line x1="552" y1="284" x2="552" y2="344"/><line x1="652" y1="284" x2="652" y2="344"/><line x1="664" y1="284" x2="664" y2="344"/><line x1="676" y1="284" x2="676" y2="344"/><line x1="688" y1="284" x2="688" y2="344"/><line x1="700" y1="284" x2="700" y2="344"/></g>
-  <rect class="body" x="562" y="270" width="10" height="12" rx="2"/><rect class="body" x="710" y="270" width="10" height="12" rx="2"/>
-  <text class="lbl" x="492" y="272">Radiator</text>
-</g>
-<g class="part" data-p="tstat" tabindex="0">
-  <rect class="hl body" x="725" y="172" width="44" height="44" rx="6"/>
-  <text class="val" id="s_tstatTxt" x="747" y="199" text-anchor="middle">68</text>
-  <circle id="s_tstatLamp" cx="747" cy="209" r="3" fill="var(--lamp-off)"/>
-  <text class="lbl" x="747" y="232" text-anchor="middle">Thermostat</text>
-</g>
-<g class="part" data-p="lwco" tabindex="0">
-  <path d="M94 236 H150 M94 336 H150" class="pipe" stroke="var(--line)" stroke-width="5"/>
-  <rect class="hl body" x="60" y="226" width="34" height="122" rx="10"/>
-  <circle id="s_float" cx="77" cy="249" r="9" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"/>
-    <path d="M77 348 V364 M70 364 H84" stroke="var(--ink)" stroke-width="2"/>
-  <g id="s_blowJet" opacity="0"><circle cx="77" cy="374" r="3" fill="var(--cold)"/><circle cx="72" cy="384" r="2" fill="var(--cold)"/><circle cx="82" cy="388" r="2.5" fill="var(--cold)"/></g>
-  <text class="lbl" x="56" y="300" text-anchor="end">LWCO</text>
-  <circle id="s_lw1Lamp" cx="77" cy="216" r="5" fill="var(--ok)"/>
-</g>
-<g class="part" data-p="feeder" tabindex="0">
-  <path d="M77 176 V200 H104 V352 H150" fill="none" stroke="var(--cold)" stroke-width="4"/>
-  <rect class="hl body" x="58" y="150" width="38" height="28" rx="3"/>
-  <circle id="s_feedLamp" cx="77" cy="164" r="5" fill="var(--lamp-off)"/>
-  <line id="s_feedX" x1="54" y1="146" x2="100" y2="182" stroke="var(--bad)" stroke-width="3" opacity="0"/>
-  <text class="lbl" x="52" y="168" text-anchor="end">Feeder</text>
-</g>
-<g class="part" data-p="boiler" tabindex="0" id="s_boilerG">
-  <rect class="hl" x="150" y="170" width="160" height="230" rx="6" fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>
-  <rect id="s_glow" x="156" y="176" width="148" height="0" fill="#ff5a1f" opacity="0"/>
-  <rect id="s_water" x="156" y="250" width="148" height="110" fill="var(--cold)" opacity=".3"/>
-  <g id="s_bub" opacity="0" fill="none" stroke="var(--paper)" stroke-width="1.5"><circle cx="180" cy="330" r="3"/><circle cx="240" cy="345" r="4"/><circle cx="215" cy="310" r="3"/><circle cx="280" cy="325" r="2.5"/><circle cx="200" cy="290" r="2"/></g>
-  <line x1="150" x2="310" y1="249.6" y2="249.6" stroke="var(--cold)" stroke-dasharray="4 3"/>
-  <text x="304" y="246" text-anchor="end" class="tag" fill="var(--cold)">NORMAL WATER LINE</text>
-  <line x1="150" x2="310" y1="277" y2="277" stroke="var(--bad)" stroke-dasharray="3 3" opacity=".8"/>
-  <text x="304" y="273" text-anchor="end" class="tag" fill="var(--bad)">LWCO CUTOFF</text>
-  <line x1="150" x2="310" y1="314" y2="314" stroke="var(--warn)" stroke-dasharray="3 3" opacity=".8"/>
-  <text x="304" y="326" text-anchor="end" class="tag" fill="var(--warn)">CROWN SHEET</text>
-  <text class="lbl" x="158" y="190">Boiler</text>
-  <text class="val" id="s_lvl" x="158" y="206" font-size="11">Water 60% full</text>
-</g>
-<g class="part" data-p="glass" tabindex="0">
-  <path d="M126 204 H150 M126 314 H150" stroke="var(--line)" stroke-width="4"/>
-  <rect class="hl" x="116" y="198" width="12" height="122" rx="3" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
-  <rect id="s_glassW" x="118" y="250" width="8" height="64" fill="var(--cold)" opacity=".7"/>
-</g>
-<g class="part" data-p="lwco2" tabindex="0">
-  <rect class="hl body" x="310" y="285" width="18" height="12" rx="2"/>
-  <circle id="s_lw2Lamp" cx="319" cy="291" r="3" fill="var(--ok)"/>
-</g>
-<g class="part" data-p="trycocks" tabindex="0">
-  <rect class="hl" x="308" y="214" width="28" height="70" fill="transparent" stroke="none"/>
-  <path d="M310 222 H322 M310 250 H322 M310 277 H322" stroke="var(--ink)" stroke-width="3"/>
-  <circle cx="324" cy="222" r="3" fill="var(--brass)"/><circle cx="324" cy="250" r="3" fill="var(--brass)"/><circle cx="324" cy="277" r="3" fill="var(--brass)"/>
-  <circle id="s_puff" cx="334" cy="250" r="6" opacity="0" fill="var(--paper)" stroke="var(--line)"/>
-</g>
-<g class="part" data-p="burner" tabindex="0">
-  <rect class="hl body" x="170" y="374" width="120" height="14" rx="3"/>
-  <g id="s_flame" opacity="0" transform="translate(30,0)"><path class="flame" d="M150 374 q8 -26 16 0 q8 -30 17 0 q8 -34 17 0 q9 -30 17 0 q8 -26 16 0 q6 -20 12 0 z" fill="#f08a1c"/><path class="flame" d="M160 374 q6 -14 12 0 q7 -18 14 0 q7 -20 14 0 q7 -18 14 0 q6 -14 12 0 z" fill="#3c7bf0" opacity=".8"/></g>
-  <path id="s_spark" d="M226 372 l6 -8 -4 0 6 -8" stroke="#f5c400" stroke-width="2" fill="none" opacity="0"/>
-  <text class="lbl" x="230" y="416" text-anchor="middle">Burner</text>
-</g>
-<g class="part" data-p="gas" tabindex="0">
-  <path d="M20 400 H120 V381 H170" class="pipe" stroke="#c9a227" stroke-width="5"/>
-  <rect class="hl body" x="36" y="388" width="30" height="24" rx="3"/>
-  <circle id="s_gasLamp" cx="51" cy="400" r="4" fill="var(--lamp-off)"/>
-  <text class="lbl" x="51" y="428" text-anchor="middle">Gas valve</text>
-</g>
-<g class="part" data-p="hl" tabindex="0">
-  <path d="M165 170 V152" stroke="var(--line)" stroke-width="3" fill="none"/><circle cx="165" cy="146" r="5" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M165 141 V130" stroke="var(--line)" stroke-width="3"/>
-  <rect class="hl" x="148" y="104" width="34" height="26" rx="3" fill="var(--plate)"/>
-  <text x="165" y="115" text-anchor="middle" font-family="var(--display)" font-size="8" fill="var(--plate-ink)">HI LIMIT</text>
-  <circle id="s_hlLamp" cx="165" cy="123" r="3.5" fill="var(--ok)"/>
-</g>
-<g class="part" data-p="ptrol" tabindex="0">
-  <path d="M225 170 V152" stroke="var(--line)" stroke-width="3" fill="none"/><circle cx="225" cy="146" r="5" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M225 141 V130" stroke="var(--line)" stroke-width="3"/>
-  <rect class="hl" x="207" y="104" width="36" height="26" rx="3" fill="var(--plate)"/>
-  <text x="225" y="115" text-anchor="middle" font-family="var(--display)" font-size="8" fill="var(--plate-ink)">P-TROL</text>
-  <circle id="s_ptLamp" cx="225" cy="123" r="3.5" fill="var(--ok)"/>
-</g>
-<g class="part" data-p="gauge" tabindex="0">
-  <path d="M262 170 V152" stroke="var(--line)" stroke-width="3" fill="none"/><circle cx="262" cy="146" r="5" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M262 141 V126" stroke="var(--line)" stroke-width="3"/>
-  <circle class="hl" cx="262" cy="108" r="17" fill="var(--paper)" stroke="var(--line)" stroke-width="2"/>
-  <line id="s_needle" x1="262" y1="108" x2="262" y2="96" stroke="var(--bad)" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="262" cy="108" r="2" fill="var(--ink)"/>
-  <text class="val" id="s_gP" x="262" y="86" text-anchor="middle" font-size="10">0.0 psi</text>
-</g>
-<g class="part" data-p="sv" tabindex="0">
-  <path d="M298 170 V146" class="pipe" stroke="var(--line)" stroke-width="7"/>
-  <rect class="hl body" x="288" y="122" width="20" height="24" rx="3"/>
-  <rect id="s_svLever" x="293" y="116" width="10" height="6" fill="var(--brass)"/>
-  <text class="lbl" x="312" y="112">Safety</text>
-</g>
-<g id="s_wreck" opacity="0">
-  <g fill="var(--line)" stroke="var(--ink)" stroke-width="1"><polygon points="148,200 190,186 180,240 142,250"/><polygon points="260,170 318,190 306,232 270,214"/><polygon points="126,330 170,318 162,372 120,360"/><polygon points="280,330 330,316 336,368 292,380"/><polygon points="206,150 238,140 244,168 212,176"/></g>
-  <g fill="var(--paper)" opacity=".85"><circle cx="230" cy="270" r="70"/><circle cx="180" cy="220" r="48"/><circle cx="285" cy="225" r="52"/><circle cx="230" cy="175" r="44"/><circle cx="170" cy="320" r="40"/><circle cx="295" cy="320" r="44"/></g>
-</g>
-`,
+ svg:STEAM_SVG,
  consts:{QB:22.8,VB:16,UAR:0.09,UAB:0.18,CR:900,MS:6,KP:6,DELAY:180,RUPTURE:45},
  sliders:[
   {k:"tstat",l:"Thermostat",u:"°F",min:40,max:95,step:1,v:68,n:[60,75],note:"Normal 60–75°F"},
@@ -812,11 +1189,11 @@ const STEAM={id:"steam",p:"s_",name:"Steam",
   hl:{n:"High-limit pressuretrol",s:"Backup pressure limit, manual reset.",w:"A second pressure control with manual reset, set above the operating pressuretrol (5 to 10 psi, at least 2 psi above it) and below the 15 psi safety valve.",y:"Only acts if the operating control fails. A person has to reset it.",f:"Required on steam boilers covered by CSD-1 and by many state rules. If it fails too, only the safety valve is left.",src:["csd","oep","wm","md"],faults:["hlFail"]},
   lwco:{n:"Primary low water cutoff",s:"Float that cuts the burner on low water and runs the feeder.",w:"A float in a chamber piped to the boiler. When the water drops to the cutoff level the float drops and cuts power to the burner. It resets itself when the water comes back.",y:"Keeps the burner off whenever the water is too low. It also runs the feeder here.",f:"Sediment can jam the float. It is blown down at least weekly with the burner on: the burner should shut off. If it doesn't, shut the boiler down and fix it (McDonnell & Miller 67 manual). Try Blow down in Controls.",src:["mm67","csd","md"],faults:["lwco1Fail"]},
   lwco2:{n:"Secondary low water cutoff",s:"Lower backup cutoff, manual reset.",w:"A probe set a little lower than the primary cutoff. If the water reaches it, the burner locks off until someone resets it.",y:"Backup for the primary. CSD-1 requires two cutoffs on steam boilers, the lower one manual reset.",f:"If both cutoffs fail, nothing stops the burner from dry firing.",src:["csd","md","wm"],faults:["lwco2Fail"]},
-  feeder:{n:"Automatic water feeder",s:"Adds water when the level drops.",w:"A valve that adds water when the level drops to its feed point, just above the cutoff.",y:"Makes up water lost to leaks and venting. In a tight system it should hardly run.",f:"Fails shut: no makeup, the level keeps falling. Stuck open: the boiler floods, water gets into the steam main, and you get water hammer and wet steam.",src:["mm67"],faults:["feedFail","feedStuck"]},
+  feeder:{n:"Automatic water feeder",s:"Adds water when the level drops.",w:"A valve that adds water when the level drops to its feed point, just above the cutoff. Its outlet is piped into the wet return below the Hartford loop's close nipple, so cold makeup water mixes with returning condensate instead of hitting hot sections directly.",y:"Makes up water lost to leaks and venting. In a tight system it should hardly run.",f:"Fails shut: no makeup, the level keeps falling. Stuck open: the boiler floods, water gets into the steam main, and you get water hammer and wet steam.",src:["mm67"],faults:["feedFail","feedStuck"]},
   sv:{n:"Safety valve",s:"Pops at 15 psi and vents steam.",w:"An ASME V-rated valve that pops at its set pressure (15 psi on a low pressure steam boiler) and vents steam.",y:"The last line of protection against overpressure. Spindle vertical; discharge piped near the floor, rated for the heat, never plugged or valved.",f:"Stuck shut, nothing limits the pressure if the controls or gas valve fail.",src:["oep","md","wm"],faults:["svStuck"]},
   hartford:{n:"Hartford loop",s:"Keeps a broken return from draining the boiler.",w:"The equalizer drops from the header back into the bottom of the boiler. The wet return joins it through a close nipple about 2 in. below the lowest water line, above the crown sheet.",y:"Balances pressure between the steam side and the return so water stays in the boiler.",f:"If the wet return breaks, the boiler can only drain down to the close nipple, which leaves the crown sheet covered. Remove the loop (switch in Controls) and a broken return can drain the boiler dry. It backs up the LWCO; it doesn't replace it.",src:["hh"],faults:["returnLeak"]},
   ret:{n:"Wet return",s:"Brings condensate back to the boiler.",w:"The return pipe below the boiler water line. It is always full of water, and condensate flows back to the boiler through it.",y:"Closes the loop: the water that left as steam comes back here.",f:"A break can drain the boiler unless a Hartford loop is in place.",src:["hh"],faults:["returnLeak"]},
-  mainvent:{n:"Main vent",s:"Lets air out of the main so steam can get in.",w:"A large air vent at the end of the steam main, after the last radiator. It lets air out fast while the system fills, then closes when steam reaches it.",y:"Steam can only move into space the air has left. Good main venting gets steam to the radiators sooner.",f:"Stuck shut: air stays trapped, steam reaches the radiators slowly, pressure builds early and the pressuretrol short-cycles the burner while rooms stay cold.",src:["vent"],faults:["mainVent"]},
+  mainvent:{n:"Main vent",s:"Lets air out of the main so steam can get in.",w:"A large air vent at the end of the steam main, after the last radiator. It lets air out fast while the system fills, then closes when steam reaches it.",y:"Steam can only move into space the air has left. Good main venting gets steam to the radiators sooner.",f:"Stuck shut: air stays trapped, steam reaches the radiators slowly, pressure builds early and the pressuretrol short-cycles the burner while rooms stay cold. Some small systems skip the main vent and rely on the radiator vents alone, but a main vent is standard on residential one-pipe steam. Two-pipe systems are different: the end of each main drains through a float and thermostatic (F&amp;T) trap into the return, and air leaves through vents on the dry return. That trap comes later with a two-pipe steam sim.",src:["vent"],faults:["mainVent"]},
   rad:{n:"Radiators and vents",s:"Where steam gives up its heat.",w:"Cast-iron radiators. Steam enters, gives up its heat and condenses; on a one-pipe system the water runs back out the same pipe. Each vent lets air out and closes when steam arrives.",y:"The radiators heat the room. The water they make returns to the boiler.",f:"Stuck vents keep the radiators from filling with steam, so they stay cool.",src:["vent"],faults:["radVent"]},
   burner:BURNER, gas:GAS, tstat:TSTAT, room:ROOM},
  init(){return Object.assign(baseState(),{Tw:195,P:0,fs:0,L:0.6,Troom:66,ptOpen:false,hlTrip:false,lw2Trip:false,low1:false,blow:0,feedValve:true,hartford:true,queue:[],pFrozen:0,glassFrozen:0.6,m:0,venting:false,relief:false,feeding:false,flood:false,off:0,puff:null})},
@@ -994,7 +1371,7 @@ function renderFailures(){const sim=cur;
    <div class="group"><h3>Failures</h3><div class="checks">${sim.faults.map(f=>`<label><input type="checkbox" data-f="${f[0]}"> ${f[1]}</label>`).join("")}</div>
      <div class="btns"><button class="btn" id="clearF">Clear all failures</button></div></div>`;
   syncFaults()}
-function syncFaults(){const sim=cur;document.querySelectorAll("input[data-f]").forEach(i=>{i.checked=!!sim.F[i.dataset.f];i.disabled=!!sim.mystery});
+function syncFaults(){const sim=cur;document.querySelectorAll("input[data-f]").forEach(i=>{i.checked=!!sim.F[i.dataset.f]&&!(sim.mystery&&sim.mystery[0]===i.dataset.f);i.disabled=!!sim.mystery});
   const mt=$("mysteryTxt"),rv=$("reveal");if(mt){mt.hidden=!sim.mystery&&!sim.revealed;mt.textContent=sim.mystery?"A hidden fault is running. Watch the gauges.":sim.revealed?`The fault was: ${sim.revealed}.`:"";rv.hidden=!sim.mystery}}
 let boxes={};
 function computeBoxes(){boxes={};const svg=$("svg");
@@ -1017,7 +1394,7 @@ function openPart(k){if(!cur.parts[k])return;openKey=k;$("sheetT").textContent=c
 function closeSheet(){$("sheet").hidden=true;openKey=null}
 function renderLog(){$("log").innerHTML=cur.logs.map(([t,m,c])=>`<div><time>${t}</time><span class="${c}">${m}</span></div>`).join("")}
 function renderAll(){renderControls();renderFailures();renderParts();renderLog();lastAlerts=""}
-function switchSim(id){cur=SIMS[id];$("svg").innerHTML=`<g id="draw-${id}">${cur.svg}</g>`;
+function switchSim(id){cur=SIMS[id];$("svg").innerHTML=`<g id="draw-${id}">${cur.svg}</g>`;bzPipes($("svg"));
   $("simHyd").setAttribute("aria-pressed",id==="hyd");$("simSteam").setAttribute("aria-pressed",id==="steam");
   computeBoxes();renderAll();closeSheet();
   const d=cur.S.dead;$("boom").hidden=!d;if(d){const r=cur.boom(d);$("boomT").textContent=r.t;$("boomB").innerHTML=r.b;if(r.wreck){at(cur.p+"boilerG","opacity",.15);at(cur.p+"wreck","opacity",1)}}
@@ -1057,7 +1434,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,.part");i
   }
 });
 document.addEventListener("keydown",e=>{const t=e.target.closest&&e.target.closest(".part");if(t&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openPart(t.dataset.p)}if(e.key==="Escape")closeSheet()});
-document.addEventListener("change",e=>{const i=e.target;if(i.id==="speed"){speed=+i.value;return}if(i.dataset&&i.dataset.f){if(cur.mystery){i.checked=!!cur.F[i.dataset.f];return}setFault(cur,i.dataset.f,i.checked)}
+document.addEventListener("change",e=>{const i=e.target;if(i.id==="speed"){speed=+i.value;return}if(i.dataset&&i.dataset.f){if(cur.mystery){i.checked=!!cur.F[i.dataset.f]&&cur.mystery[0]!==i.dataset.f;return}setFault(cur,i.dataset.f,i.checked)}
   if(i.dataset&&i.dataset.k){const s=cur.sliders.find(x=>x.k===i.dataset.k);log(cur,`${s.l} set to ${cur.V[s.k]}${s.u}${outside(cur,s)?" (outside normal range)":""}.`,outside(cur,s)?"w":"")}});
 document.addEventListener("input",e=>{const i=e.target;if(i.dataset&&i.dataset.k){const k=i.dataset.k,s=cur.sliders.find(x=>x.k===k);cur.V[k]=+i.value;$("o_"+k).textContent=i.value+s.u;cur.sliders.forEach(x=>markRow(cur,x));cur.onSlider&&cur.onSlider(k)}});
 
@@ -1068,7 +1445,7 @@ cur=SIMS[startSim]||HYD;switchSim(cur.id);showTab(startTab);setSpeed(10);
 let last=performance.now();
 function frame(now){const real=Math.min(0.1,(now-last)/1000);last=now;
   if(running){for(const sim of Object.values(SIMS)){if(sim!==cur&&sim.S.t>0)continue;let t=real*speed;while(t>0&&!sim.S.dead){const d=Math.min(0.5,t);sim.step(d);t-=d}}}
-  cur.draw(running?real:0);syncStrip();if(tab==="controls")syncSwitches();
+  cur.draw(running?real:0);bzFollow($("svg"));syncStrip();if(tab==="controls")syncSwitches();
   requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 
@@ -1078,18 +1455,32 @@ const DISC_VER="1";
 function openModal(id){$(id).hidden=false}
 function closeModal(id){$(id).hidden=true}
 function fbContext(){return `${cur.id==="hyd"?"Hot water":"Steam"} sim, t=${Math.round(cur.S.t)}s, faults: ${Object.keys(cur.F).filter(k=>cur.F[k]).join(", ")||"none"}, ${navigator.userAgent}`}
+// FB-Enable: on claude.ai, the owner's feedback goes straight to Claude as a comment on this page.
+// Everywhere else (classmates, the public site) it goes to the Google Form.
+let CM=null,cmState="off";
+(async()=>{try{if(window.claude&&window.claude.use){CM=await window.claude.use("comments");if(CM){try{cmState=await CM.canSendToClaude()}catch(e){cmState="off"}}}}catch(e){CM=null}})();
+async function refreshFbMode(){if(CM){try{cmState=await CM.canSendToClaude()}catch(e){cmState="off"}}
+  const toClaude=CM&&cmState==="available";$("fbTo").textContent=toClaude?"Sends straight to Claude as a comment on this page. Claude replies in the comment thread and in your project.":"No sign-in needed.";$("fbSend").textContent=toClaude?"Send to Claude":"Send";return toClaude}
 async function sendFeedback(){
   const msg=$("fbMsg").value.trim();if(!msg){$("fbStatus").textContent="Please write something first.";return}
-  const name=$("fbName").value.trim();const body=new URLSearchParams();body.append(FEEDBACK.entry,`[${$("fbType").value}] ${msg}\n\nFrom: ${name||"anonymous"}\nContext: ${fbContext()}`);
+  const name=$("fbName").value.trim();const text=`[${$("fbType").value}] ${msg}\n\nFrom: ${name||"anonymous"}\nContext: ${fbContext()}`;
   $("fbSend").disabled=true;$("fbStatus").textContent="Sending...";
-  try{await fetch(FEEDBACK.form.replace(/\/viewform.*$/,"/formResponse"),{method:"POST",mode:"no-cors",body});
+  try{
+    if(CM&&cmState==="available"){
+      try{const anchor=await CM.anchorFor($("drawing"));await CM.sendToClaude({anchor,text:text.slice(0,3900)});
+        $("fbStatus").textContent="Sent to Claude. The reply shows up in the comment thread.";$("fbMsg").value="";setTimeout(()=>closeModal("fb"),1600);return}
+      catch(e){if(e&&e.code==="consent_required"){$("fbStatus").textContent="Not sent: allow comments for this page when asked, then press Send again.";return}
+        if(e&&e.code!=="claude_unavailable"&&e.code!=="capability_removed"&&e.code!=="forbidden"){$("fbStatus").textContent=`Couldn't send to Claude (${e.code||"error"}). Press Send again to use the feedback form instead.`;cmState="off";return}
+        cmState="off"}}
+    const body=new URLSearchParams();body.append(FEEDBACK.entry,text);
+    await fetch(FEEDBACK.form.replace(/\/viewform.*$/,"/formResponse"),{method:"POST",mode:"no-cors",body});
     $("fbStatus").textContent="Thanks, it was sent.";$("fbMsg").value="";setTimeout(()=>closeModal("fb"),1200)}
   catch(e){$("fbStatus").innerHTML=`Couldn't send from here. <a href="${FEEDBACK.form}" target="_blank" rel="noopener">Open the feedback form</a> instead.`}
   finally{$("fbSend").disabled=false}}
 document.addEventListener("click",e=>{const id=e.target.id;
   if(id==="discOk"){closeModal("disc");try{localStorage.setItem("bt-disc",DISC_VER)}catch(_){}}
   else if(id==="about")openModal("disc");
-  else if(id==="feedback"){$("fbStatus").textContent="";openModal("fb");$("fbMsg").focus()}
+  else if(id==="feedback"){$("fbStatus").textContent="";refreshFbMode();openModal("fb");$("fbMsg").focus()}
   else if(id==="fbCancel")closeModal("fb");
   else if(id==="fbSend")sendFeedback();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("fb").hidden)closeModal("fb")});
